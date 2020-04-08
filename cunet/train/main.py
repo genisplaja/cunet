@@ -9,7 +9,7 @@ from cunet.train.models.cunet_model import cunet_model
 from cunet.train.models.unet_model import unet_model
 import os
 
-from cunet.train.others.lock import get_lock
+#from cunet.train.others.lock import get_lock
 
 
 logger = tf.get_logger()
@@ -21,7 +21,7 @@ def main():
     name = make_name()
     save_path = save_dir('models', name)
     write_config(save_path)
-    _ = get_lock()
+    #_ = get_lock()
     logger.info('Starting the computation')
 
     logger.info('Running training with config %s' % str(config))
@@ -46,13 +46,15 @@ def main():
 
     logger.info('Starting training for %s' % name)
 
-    # USE VAL_STEPS!!
+    # USE VAL_STEPS!! 
     
     model.fit(
         ds_train,
         validation_data=ds_val,
         steps_per_epoch=config.N_BATCH,
         epochs=config.N_EPOCH,
+        verbose=1,
+        validation_steps=config.N_BATCH//config.BATCH_SIZE,
         callbacks=[
             make_earlystopping(),
             make_reduce_lr(),

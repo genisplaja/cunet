@@ -13,13 +13,25 @@ def get_config_as_str():
     }
 
 
-def spec_complex(audio_file):
+def spec_complex(audio_file, scaler=1):
     """Compute the complex spectrum"""
     output = {'type': 'complex'}
     logger = logging.getLogger('computing_spec')
     try:
-        logger.info('Computing complex spec for %s' % audio_file)
-        audio, fe = librosa.load(audio_file, sr=config.FR)
+        audio = np.zeros([1])
+        if isinstance(audio_file, str):
+            logger.info('Computing complex spec for %s' % audio_file)
+            audio, fe = librosa.load(audio_file, sr=config.FR)
+        else:
+            logger.info('Computing complex spec for mixture')
+            for file in audio_file:
+                y = librosa.load(file, sr=config.FR)[0]
+                if audio.size == 1:
+                    audio = y
+                else:
+                    audio = np.sum([audio, y], axis=0)
+
+        audio /= scaler
         output['spec'] = librosa.stft(
             audio, n_fft=config.FFT_SIZE, hop_length=config.HOP)
     except Exception as my_error:
@@ -75,8 +87,36 @@ def compute_one_song(folder):
     logger = logging.getLogger('computing_spec')
     name = os.path.basename(os.path.normpath(folder)).replace(' ', '_')
     logger.info('Computing spec for %s' % name)
-    data = {i: spec_complex(folder+i+'.wav')['spec']
-            for i in config.INTRUMENTS}
+
+    # # MUSDB
+    # for i in config.INTRUMENTS:
+    #     print(folder+i+'.wav')
+    # data = {i: spec_complex(folder+i+'.wav')['spec'] for i in config.INTRUMENTS}
+    
+    # SATB
+    count = 0
+    data = {i: dict() for i in config.CONDITIONS}
+    stem_list = glob(os.path.join(folder,"*.wav"))
+
+    for i in stem_list:
+
+        count += 1
+
+        filename = os.path.splitext(os.path.basename(i))[0].split('_')
+        print('processing '+str(count)+' of '+str(len(stem_list))+' files')
+
+        song  = filename[1] # ND, LI, etc.
+        group = filename[2] # soprano, etc.
+        part  = filename[3] # 1,2,3,4...
+
+        if config.GROUP == 'test':
+            data[group] = spec_complex(i, scaler=len(stem_list))['spec']
+        if config.GROUP == 'train':
+            data[group][part] = spec_complex(i)['spec']
+
+    if config.GROUP == 'test':
+        data['mixture'] = spec_complex(stem_list, scaler=len(stem_list))['spec']
+
     np.savez(
         os.path.join(config.PATH_SPEC, name+'.npz'),
         config=get_config_as_str(), **data
@@ -97,6 +137,6 @@ def main():
     return
 
 
-if __name__ == '__main__':
+if __name__ == '__main__': 
     config.parse_args()
     main()

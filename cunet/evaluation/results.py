@@ -11,15 +11,23 @@ from cunet.evaluation.config import config
 from cunet.preprocess.config import config as config_prepro
 from cunet.train.load_data_offline import normlize_complex
 from cunet.preprocess.spectrogram import spec_complex
+import soundfile as sf
 
 
 logging.basicConfig(level=logging.INFO)
 
 
+def get_f0(song, group, part):
+    return np.load(os.path.join(config_prepro.PATH_INDEXES,'indexes_SATB_F0s.npz'), 
+    	allow_pickle=True)[song].item()[group].item()[part][:,1]
+
 def istft(data):
     return librosa.istft(
         data, hop_length=config_prepro.HOP,
         win_length=config_prepro.FFT_SIZE)
+
+def save_pred_to_path(pred, name):
+	sf.write(os.path.join(config.PATH_AUDIO_PRED,name+'.wav'), pred, config_prepro.FR)
 
 
 def adapt_pred(pred, target):
@@ -40,20 +48,32 @@ def reconstruct(pred_mag, orig_mix_phase, orig_mix_mag):
     return istft(pred_spec)
 
 
-def prepare_a_song(spec, num_frames, num_bands):
+def prepare_a_song(spec, num_frames, num_bands, cond):
     size = spec.shape[1]
+
     segments = np.zeros(
         (size//(num_frames-config.OVERLAP)+1, num_bands, num_frames, 1),
-        dtype=np.float32
-    )
+        dtype=np.float32)
+
+    segments_cond = np.zeros(
+        (size//(num_frames-config.OVERLAP)+1, num_frames, 1),
+        dtype=np.float32)
+
     for index, i in enumerate(np.arange(0, size, num_frames-config.OVERLAP)):
         segment = spec[:num_bands, i:i+num_frames]
+        segment_cond = cond[i:i+num_frames]
         tmp = segment.shape[1]
+
         if tmp != num_frames:
             segment = np.zeros((num_bands, num_frames), dtype=np.float32)
+            segment_cond = np.zeros(num_frames, dtype=np.float32)
             segment[:, :tmp] = spec[:num_bands, i:i+num_frames]
+            segment_cond[:tmp] = cond[i:i+num_frames]
+
         segments[index] = np.expand_dims(np.abs(segment), axis=2)
-    return segments
+        segments_cond[index] = np.expand_dims(segment_cond, axis=1)
+
+    return segments, segments_cond
 
 
 def separate_audio(path_audio, path_output, model, cond):
@@ -99,14 +119,18 @@ def analize_spec(orig_mix_spec, model, cond):
             pred_mag = model.predict(x)
         if config.MODE == 'conditioned':
             num_bands, num_frames = model.input_shape[0][1:3]
-            x = prepare_a_song(orig_mix_mag, num_frames, num_bands)
-            if config.EMB_TYPE == 'dense':
-                cond = cond.reshape(1, -1)
-            if config.EMB_TYPE == 'cnn':
-                cond = cond.reshape(-1, 1)
-            tmp = np.zeros((x.shape[0], *cond.shape))
-            tmp[:] = cond
-            pred_mag = model.predict([x, tmp])
+            x, cond_seg = prepare_a_song(orig_mix_mag, num_frames, num_bands, cond)
+            print('Prepare a Song 1:'+str(np.shape(x)))
+            # if config.EMB_TYPE == 'dense':
+            #     cond = cond.reshape(1, -1)
+            # if config.EMB_TYPE == 'cnn':
+            #     cond = cond.reshape(-1, 1)
+            # tmp = np.zeros((x.shape[0], *cond.shape))
+            # tmp[:] = cond
+            print('Prepare a Song 2:'+str(np.shape(x)))
+            print('Prepare a Song 3:'+str(np.shape(cond_seg)))
+            pred_mag = model.predict([x, cond_seg])
+            print('Prepare a Song 4:'+str(np.shape(pred_mag)))
         pred_mag = np.squeeze(
             concatenate(pred_mag, orig_mix_spec.shape), axis=-1)
         pred_audio = reconstruct(
@@ -116,35 +140,52 @@ def analize_spec(orig_mix_spec, model, cond):
     return pred_audio, pred_mag
 
 
-def do_an_exp(audio, target_source, model):
+def do_an_exp(audio, target_source, model, file=''):
     accompaniment = np.zeros([1])
     for i in config.INSTRUMENTS:
         if i not in target_source:
-            if len(accompaniment) == 1:
+            if accompaniment.size == 1:
                 accompaniment = audio[i]
             else:
                 accompaniment = np.sum([accompaniment, audio[i]], axis=0)
+
     # original isolate target
     target = istft(audio[target_source])
     # original mix
-    mix = istft(audio['mix'])
+    mix = istft(audio['mixture'])
     # accompaniment (sum of all apart from the original)
     acc = istft(accompaniment)
+
     # predicted separation
-    cond = np.zeros(len(config.INSTRUMENTS))
-    for i in target_source.split('_'):
-        cond[config.INSTRUMENTS.index(i)] = 1.
-    pred_audio, pred_mag = analize_spec(audio['mix'], model, cond)
+    file_length = audio[target_source].shape[1]
+    cond = np.zeros(file_length)
+    cond = get_f0(file, target_source, '1') # Only cover use-case#1 here: exactly one singer per part
+
+    print('Spec Target: '+str(np.shape(audio[target_source])))
+    print('Spec Acc: '+str(np.shape(accompaniment)))
+    print('Spec Mixture: '+str(np.shape(audio['mixture'])))
+
+    print('Audio Target: '+str(np.shape(target)))
+    print('Audio Acc: '+str(np.shape(acc)))
+    print('Audio Mixture: '+str(np.shape(mix)))
+
+    print('Cond: '+str(np.shape(cond)))
+
+    pred_audio, pred_mag = analize_spec(audio['mixture'], model, cond)
+    print('Pred Audio:'+str(np.shape(pred_audio)))
+    print('Pred Mag:'+str(np.shape(pred_mag)))
     # to go back to the range of values of the original target
     pred_audio = adapt_pred(pred_audio, target)
+    print('Pred Audio:'+str(np.shape(pred_audio)))
     # size
     s = min(pred_audio.shape[0], target.shape[0], mix.shape[0], acc.shape[0])
     pred_acc = mix[:s] - pred_audio[:s]
     pred = np.array([pred_audio[:s], pred_acc])
     orig = np.array([target[:s], acc[:s]])
     sdr, sir, sar, perm = mir_eval.separation.bss_eval_sources(
-        reference_sources=orig, estimated_sources=pred,
+        reference_sources=target, estimated_sources=pred_audio,
         compute_permutation=False)
+    save_pred_to_path(pred_audio,str((file+'_'+target_source+'_1')))
     return sdr[perm[0]], sir[perm[0]], sar[perm[0]]
 
 
@@ -172,11 +213,13 @@ def load_checkpoint(path_results):
     from cunet.train.models.unet_model import unet_model
     from cunet.train.models.cunet_model import cunet_model
     path_results = os.path.join(path_results, 'checkpoint')
+    print('path_results: ' + str(path_results))
     latest = tf.train.latest_checkpoint(path_results)
     if config.MODE == 'standard':
         model = unet_model()
     if config.MODE == 'conditioned':
         model = cunet_model()
+    print('latest: '+str(latest))
     model.load_weights(latest)
     return model
 
@@ -226,7 +269,7 @@ def main():
             results.at[i, 'target'] = target
             logger.info('Analyzing ' + name + ' for target ' + target)
             (results.at[i, 'sdr'], results.at[i, 'sir'],
-             results.at[i, 'sar']) = do_an_exp(audio, target, model)
+             results.at[i, 'sar']) = do_an_exp(audio, target, model, file=name)
             logger.info(results.iloc[i])
             i += 1
         results.to_pickle(os.path.join(path_results, 'results.pkl'))

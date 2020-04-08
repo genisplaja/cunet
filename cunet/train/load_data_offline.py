@@ -36,31 +36,28 @@ def normlize_complex(data, c_max=1):
 
 
 def get_max_complex(data, keys):
-    # sometimes the max is not the mixture
-    pos = np.argmax([np.abs(complex_max(data[i])) for i in keys])
-    return np.array([complex_max(data[i]) for i in keys])[pos]
+
+    for key in keys:
+        pos = np.argmax([np.abs(complex_max(data[key].item()[str(i)])) for i in data[key].item()])
+
+    for key in keys:
+        max_comp = np.array([complex_max(data[key].item()[str(i)]) for i in data[key].item()])[pos]
+
+    return max_comp
 
 
 def load_a_file(fl):
     data = {}
-    logger.info('Loading the file %s' % fl)
+    print('Loading the file %s' % fl)
     data_tmp = np.load(fl, allow_pickle=True)
-    if config.MODE == 'standard':
-        data = np.empty([*data_tmp['mix'].shape, 2], dtype=np.complex64)
-        c_max = get_max_complex(data_tmp, ['mix', config.TARGET])
-        data[:, :, 0] = normlize_complex(data_tmp[config.TARGET], c_max)
-        data[:, :, 1] = normlize_complex(data_tmp['mix'], c_max)
-    if config.MODE == 'conditioned':
-        sources = copy.deepcopy(data_tmp.files)
-        sources.remove('config')
-        # to be sure that the mix is the last element
-        sources.insert(len(sources), sources.pop(sources.index('mix')))
-        data = np.empty(
-            [*data_tmp['mix'].shape, len(sources)], dtype=np.complex64
-        )
-        c_max = get_max_complex(data_tmp, sources)
-        for j, value in enumerate(sources):
-            data[:, :, j] = normlize_complex(data_tmp[value], c_max)
+    sources = copy.deepcopy(data_tmp.files)
+    sources.remove('config')
+    c_max = get_max_complex(data_tmp, sources)
+
+    for value in sources:
+        data[value] = {}
+        for i in data_tmp[value].item():
+            data[value][i] = normlize_complex(data_tmp[value].item()[str(i)], c_max)
     return (get_name(fl), data)
 
 
@@ -73,6 +70,7 @@ def load_data(files):
             )
     }
     _ = gc.collect()
+
     return data
 
 

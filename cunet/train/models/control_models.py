@@ -44,6 +44,7 @@ def dense_control(n_conditions, n_neurons):
     return input_conditions, gammas, betas
 
 
+# DO 2D Condition Change Here
 def cnn_block(
     x, n_filters, kernel_size, padding, initializer, activation='relu'
 ):

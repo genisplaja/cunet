@@ -87,7 +87,7 @@ def SATBBatchGenerator(valid=False):
         sources = ['soprano','tenor','bass','alto']
         out_shapes = {'mixture':np.zeros(config.INPUT_SHAPE), 
                       'target':np.zeros(config.INPUT_SHAPE), 
-                      'conditions':np.zeros([config.Z_DIM,2])}
+                      'conditions':np.zeros(config.Z_DIM)}
 
         # Get rand song
         if not valid:
@@ -171,6 +171,7 @@ def SATBBatchGenerator(valid=False):
                 print(e)
                 pass
 
+        print(np.shape(out_shapes['conditions']))
         yield out_shapes
 
 
@@ -183,8 +184,10 @@ def convert_to_estimator_input(d):
         if config.CONTROL_TYPE == 'cnn':
             c_shape = (config.Z_DIM[0], config.Z_DIM[1], 1)
         cond = tf.ensure_shape(tf.reshape(d['conditions'], c_shape), c_shape)
+        print('conv. cond: '+ str(np.shape(cond)))
         # mixture + condition vector z
         inputs = (inputs, cond)
+        print('conv. inputs: '+ str(np.shape(inputs)))
         # target -> isolate instrument
     outputs = tf.ensure_shape(d["target"], config.INPUT_SHAPE)
     return (inputs, outputs)

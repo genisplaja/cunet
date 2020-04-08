@@ -8,14 +8,12 @@ def FiLM_simple_layer():
         x, gamma, beta = args
         s = list(x.shape)
         s[0] = 1
-        s.insert(0,1)
-        print('lol')
-        print('Gamma: '+ str(gamma))
-        print('Beta: '+ str(beta))
-        print('X: '+ str(x))
+        
         # avoid tile with the num of batch -> it is the same for both tensors
-        g = tf.tile(tf.expand_dims(tf.expand_dims(gamma, 2), 3), s)
-        b = tf.tile(tf.expand_dims(tf.expand_dims(beta, 2), 3), s)
+        g = tf.tile(tf.expand_dims(gamma, 2), s)
+        b = tf.tile(tf.expand_dims(beta, 2), s)
+
+
         print(g)
 
         return tf.add(b, tf.multiply(x, g))
@@ -40,12 +38,12 @@ def FiLM_complex_layer():
 def slice_tensor(position):
     # Crops (or slices) a Tensor
     def func(x):
-        return x[:, :, position]
+        return x[:, :, :, position]
     return Lambda(func)
 
 
 def slice_tensor_range(init, end):
     # Crops (or slices) a Tensor
     def func(x):
-        return x[:, :, init:end]
+        return x[:, :, :, init:end]
     return Lambda(func)

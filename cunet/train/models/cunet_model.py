@@ -52,6 +52,7 @@ def cunet_model():
             gamma = slice_tensor_range(init, end)(gammas)
             beta = slice_tensor_range(init, end)(betas)
             complex_index += n_filters
+
         x = u_net_conv_block(
             x, n_filters, initializer, gamma, beta,
             activation=config.ACTIVATION_ENCODER, film_type=config.FILM_TYPE

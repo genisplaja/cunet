@@ -179,9 +179,9 @@ def convert_to_estimator_input(d):
     inputs = tf.ensure_shape(d["mixture"], config.INPUT_SHAPE)
     if config.MODE == 'conditioned':
         if config.CONTROL_TYPE == 'dense':
-            c_shape = (1, config.Z_DIM)
+            c_shape = (1, config.Z_DIM[0], config.Z_DIM[1])
         if config.CONTROL_TYPE == 'cnn':
-            c_shape = (config.Z_DIM, 1)
+            c_shape = (config.Z_DIM[0], config.Z_DIM[1], 1)
         cond = tf.ensure_shape(tf.reshape(d['conditions'], c_shape), c_shape)
         # mixture + condition vector z
         inputs = (inputs, cond)

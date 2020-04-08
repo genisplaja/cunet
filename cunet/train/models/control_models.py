@@ -1,5 +1,5 @@
 from tensorflow.keras.layers import (
-    Input, Conv1D, Dense, BatchNormalization, Dropout
+    Input, Conv1D, Conv2D, Dense, BatchNormalization, Dropout
 )
 import tensorflow as tf
 from cunet.train.config import config
@@ -48,9 +48,12 @@ def dense_control(n_conditions, n_neurons):
 def cnn_block(
     x, n_filters, kernel_size, padding, initializer, activation='relu'
 ):
+    
+    kernel_shape = [kernel_size[0],kernel_size[1]]
+
     for i, (f, p) in enumerate(zip(n_filters, padding)):
         extra = i != 0
-        x = Conv1D(f, kernel_size, padding=p, activation=activation,
+        x = Conv2D(f, kernel_shape, padding=p, activation=activation,
                    kernel_initializer=initializer)(x)
         if extra:
             x = Dropout(0.5)(x)
@@ -68,7 +71,8 @@ def cnn_control(n_conditions, n_filters):
         - n_filters = [16, 32, 64]
 
     """
-    input_conditions = Input(shape=(config.Z_DIM[0], config.Z_DIM[1]))
+
+    input_conditions = Input(shape=(config.Z_DIM[0], config.Z_DIM[1], 1))
     initializer = tf.random_normal_initializer(stddev=0.02)
     cnn = cnn_block(
         input_conditions, n_filters, config.Z_DIM, config.PADDING, initializer

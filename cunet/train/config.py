@@ -70,7 +70,7 @@ class config(Config):
         'simple', simple_dense='simple', complex_dense='complex',
         simple_cnn='simple', complex_cnn='complex'
     )
-    Z_DIM = [INPUT_SHAPE[1],config_prepro.CQT_BINS] # f0 point for each spec frame
+    Z_DIM = INPUT_SHAPE[1] # f0 point for each spec frame
     ACT_G = 'linear'
     ACT_B = 'linear'
     N_CONDITIONS = setting(

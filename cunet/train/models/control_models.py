@@ -67,7 +67,7 @@ def cnn_control(n_conditions, n_filters):
         - n_filters = [16, 32, 64]
 
     """
-    input_conditions = Input(shape=(config.Z_DIM[0], config.Z_DIM[1]))
+    input_conditions = Input(shape=(config.Z_DIM,1))
     initializer = tf.random_normal_initializer(stddev=0.02)
     cnn = cnn_block(
         input_conditions, n_filters, config.Z_DIM, config.PADDING, initializer

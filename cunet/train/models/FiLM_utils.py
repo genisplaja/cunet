@@ -8,9 +8,16 @@ def FiLM_simple_layer():
         x, gamma, beta = args
         s = list(x.shape)
         s[0] = 1
+        print('lol')
+        print('X: '+str(s))
+        print('gamma: '+str(gamma))
+        print('beta: '+str(beta))
         # avoid tile with the num of batch -> it is the same for both tensors
         g = tf.tile(tf.expand_dims(tf.expand_dims(gamma, 2), 3), s)
         b = tf.tile(tf.expand_dims(tf.expand_dims(beta, 2), 3), s)
+        print('lol2')
+        print('g: '+str(g))
+        print('b: '+str(b))
         return tf.add(b, tf.multiply(x, g))
     return Lambda(func)
 

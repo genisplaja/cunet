@@ -2,7 +2,6 @@
 from effortless_config import Config, setting
 import tensorflow as tf
 import os
-from cunet.preprocess.config import config as config_prepro
 
 
 class config(Config):
@@ -13,16 +12,16 @@ class config(Config):
 
     MODE = setting(default='conditioned', standard='standard')
 
-    NAME = 'satb_one_hot_f0s'
+    NAME = 'with_new_norm_and_aug'
     ADD_TIME = False    # add the time and date in the name
     TARGET = 'vocals'   # only for standard version
 
     # GENERATOR
-    PATH_BASE = '../data/satb_dst/'
+    PATH_BASE = './'
     # default = conditioned
     INDEXES_TRAIN = setting(
         default=os.path.join(
-            PATH_BASE, 'train/indexes/indexes_SATB_F0s.npz'),
+            PATH_BASE, 'train/indexes/indexes_conditioned_1_4_1_False_False_1.0.npz'),
         standard=os.path.join(
             PATH_BASE, 'train/indexes/indexes_standard_1_4.npz')
     )
@@ -42,12 +41,11 @@ class config(Config):
     REDUCE_PLATEAU_PATIENCE = 15
 
     # training
-    BATCH_SIZE = 32
+    BATCH_SIZE = 64
     N_BATCH = 2048
     N_EPOCH = 1000
     PROGRESSIVE = True
     AUG = True
-    USE_CASE = 1 # 0: max 1 singer, 1: exactly 1, 2: minimum 1
 
     # unet paramters
     INPUT_SHAPE = [512, 128, 1]  # freq = 512, time = 128
@@ -63,14 +61,14 @@ class config(Config):
 
     # control parameters
     CONTROL_TYPE = setting(
-        'cnn', simple_dense='dense', complex_dense='dense',
+        'dense', simple_dense='dense', complex_dense='dense',
         simple_cnn='cnn', complex_cnn='cnn'
     )
     FILM_TYPE = setting(
         'simple', simple_dense='simple', complex_dense='complex',
         simple_cnn='simple', complex_cnn='complex'
     )
-    Z_DIM = [INPUT_SHAPE[1],config_prepro.CQT_BINS] # f0 point for each spec frame
+    Z_DIM = 4       # for musdb -> 4 instruments: vocals, drums, bass, rest
     ACT_G = 'linear'
     ACT_B = 'linear'
     N_CONDITIONS = setting(
@@ -80,9 +78,9 @@ class config(Config):
 
     # cnn control
     N_FILTERS = setting(
-        [16, 64, 256], simple_cnn=[16, 32, 64], complex_cnn=[32, 64, 256]
+        [16, 32, 64], simple_cnn=[16, 32, 64], complex_cnn=[32, 64, 256]
     )
-    PADDING = ['same', 'same', 'same']
+    PADDING = ['same', 'same', 'valid']
     # Dense control
     N_NEURONS = setting(
         [16, 64, 256], simple_dense=[16, 64, 256],

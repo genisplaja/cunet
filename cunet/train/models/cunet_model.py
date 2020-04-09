@@ -13,16 +13,17 @@ from cunet.train.config import config
 
 
 def u_net_conv_block(
-    x, n_filters, initializer, gamma, beta, activation, film_type,
+    inputs, n_filters, initializer, gamma, beta, activation, film_type,
     kernel_size=(5, 5), strides=(2, 2), padding='same'
 ):
+
     x = Conv2D(n_filters, kernel_size=kernel_size,  padding=padding,
-               strides=strides, kernel_initializer=initializer)(x)
+               strides=strides, kernel_initializer=initializer)(inputs)
     x = BatchNormalization(momentum=0.9, scale=True)(x)
-    if film_type == 'simple':
-        x = FiLM_simple_layer()([x, gamma, beta])
-    if film_type == 'complex':
-        x = FiLM_complex_layer()([x, gamma, beta])
+    # if film_type == 'simple':
+    #     x = FiLM_simple_layer()([x, gamma, beta])
+    # if film_type == 'complex':
+    #     x = FiLM_complex_layer()([x, gamma, beta])
     x = get_activation(activation)(x)
     return x
 
@@ -31,7 +32,7 @@ def cunet_model():
     # axis should be fr, time -> right not it's time freqs
     inputs = Input(shape=config.INPUT_SHAPE)
     n_layers = config.N_LAYERS
-    x = inputs
+
     encoder_layers = []
     initializer = tf.random_normal_initializer(stddev=0.02)
 
@@ -40,21 +41,25 @@ def cunet_model():
             n_conditions=config.N_CONDITIONS, n_neurons=config.N_NEURONS)
     if config.CONTROL_TYPE == 'cnn':
         input_conditions, gammas, betas = cnn_control(
-            n_conditions=config.N_CONDITIONS, n_filters=config.N_FILTERS)
+            n_conditions=512, n_filters=config.N_FILTERS)
+    inputs = FiLM_simple_layer()([inputs, gammas, betas])
+
+    x = inputs
+
     # Encoder
     complex_index = 0
     for i in range(n_layers):
         n_filters = config.FILTERS_LAYER_1 * (2 ** i)
-        if config.FILM_TYPE == 'simple':
-            gamma, beta = slice_tensor(i)(gammas), slice_tensor(i)(betas)
-        if config.FILM_TYPE == 'complex':
-            init, end = complex_index, complex_index+n_filters
-            gamma = slice_tensor_range(init, end)(gammas)
-            beta = slice_tensor_range(init, end)(betas)
-            complex_index += n_filters
+        # if config.FILM_TYPE == 'simple':
+        #     gamma, beta = slice_tensor(i)(gammas), slice_tensor(i)(betas)
+        # if config.FILM_TYPE == 'complex':
+        #     init, end = complex_index, complex_index+n_filters
+        #     gamma = slice_tensor_range(init, end)(gammas)
+        #     beta = slice_tensor_range(init, end)(betas)
+        #     complex_index += n_filters
 
         x = u_net_conv_block(
-            x, n_filters, initializer, gamma, beta,
+            x, n_filters, initializer, gammas, betas,
             activation=config.ACTIVATION_ENCODER, film_type=config.FILM_TYPE
         )
         encoder_layers.append(x)

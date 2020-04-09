@@ -49,11 +49,11 @@ def cnn_block(
     x, n_filters, kernel_size, padding, initializer, activation='relu'
 ):
     
-    kernel_shape = [kernel_size[0],kernel_size[1]]
+    kernel_shape = 10
 
     for i, (f, p) in enumerate(zip(n_filters, padding)):
         extra = i != 0
-        x = Conv2D(f, kernel_shape, padding=p, activation=activation,
+        x = Conv1D(f, kernel_shape, padding=p, activation=activation,
                    kernel_initializer=initializer)(x)
         if extra:
             x = Dropout(0.5)(x)
@@ -72,15 +72,17 @@ def cnn_control(n_conditions, n_filters):
 
     """
 
-    input_conditions = Input(shape=(config.Z_DIM[0], config.Z_DIM[1], 1))
+    input_conditions = Input(shape=(config.Z_DIM[0], config.Z_DIM[1]))
     initializer = tf.random_normal_initializer(stddev=0.02)
     cnn = cnn_block(
         input_conditions, n_filters, config.Z_DIM, config.PADDING, initializer
     )
+
     gammas = Dense(
         n_conditions, input_dim=n_filters[-1], activation=config.ACT_G,
         kernel_initializer=initializer
     )(cnn)
+
     betas = Dense(
         n_conditions, input_dim=n_filters[-1], activation=config.ACT_B,
         kernel_initializer=initializer

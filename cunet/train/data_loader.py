@@ -171,23 +171,21 @@ def SATBBatchGenerator(valid=False):
                 print(e)
                 pass
 
-        print(np.shape(out_shapes['conditions']))
         yield out_shapes
 
 
 def convert_to_estimator_input(d):
     # just the mixture standar mode
     inputs = tf.ensure_shape(d["mixture"], config.INPUT_SHAPE)
-    if config.MODE == 'conditioned':
-        if config.CONTROL_TYPE == 'dense':
-            c_shape = (1, config.Z_DIM[0], config.Z_DIM[1])
-        if config.CONTROL_TYPE == 'cnn':
-            c_shape = (config.Z_DIM[0], config.Z_DIM[1], 1)
-        cond = tf.ensure_shape(tf.reshape(d['conditions'], c_shape), c_shape)
-        print('conv. cond: '+ str(np.shape(cond)))
+    # if config.MODE == 'conditioned':
+    #     if config.CONTROL_TYPE == 'dense':
+    #         c_shape = (1, config.Z_DIM[0], config.Z_DIM[1])
+    #     if config.CONTROL_TYPE == 'cnn':
+    #         c_shape = (config.Z_DIM[0], config.Z_DIM[1])
+    #     cond = tf.ensure_shape(tf.reshape(d['conditions'], c_shape), c_shape)
         # mixture + condition vector z
-        inputs = (inputs, cond)
-        print('conv. inputs: '+ str(np.shape(inputs)))
+    cond = tf.ensure_shape(d["conditions"], config.Z_DIM)
+    inputs = (inputs, cond)
         # target -> isolate instrument
     outputs = tf.ensure_shape(d["target"], config.INPUT_SHAPE)
     return (inputs, outputs)

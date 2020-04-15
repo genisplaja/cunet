@@ -27,7 +27,7 @@ class config(Config):
     MODE = 'conditioned'
     GROUP = 'train' # mainly used for spectrogram pre-processing: need to compute the mixture as well
 
-    CQT_BINS = 360
+    CQT_BINS = 180
     MIN_FREQ = 32.7
     BIN_PER_OCT = 60
 

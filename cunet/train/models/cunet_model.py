@@ -1,7 +1,7 @@
 import tensorflow as tf
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import (
-    Input, Conv2D, multiply, BatchNormalization
+    Input, Conv2D, Multiply, BatchNormalization, Lambda
 )
 from tensorflow.keras.optimizers import Adam
 from cunet.train.models.FiLM_utils import (
@@ -27,6 +27,9 @@ def u_net_conv_block(
     x = get_activation(activation)(x)
     return x
 
+def mult(args):
+    t1,t2 = args
+    return Multiply()([t1, t2])
 
 def cunet_model():
     # axis should be fr, time -> right not it's time freqs
@@ -42,9 +45,9 @@ def cunet_model():
     if config.CONTROL_TYPE == 'cnn':
         input_conditions, gammas, betas = cnn_control(
             n_conditions=512, n_filters=config.N_FILTERS)
-    inputs = FiLM_simple_layer()([inputs, gammas, betas])
+    inputs_ = FiLM_simple_layer()([inputs, gammas, betas])
 
-    x = inputs
+    x = inputs_
 
     # Encoder
     complex_index = 0
@@ -81,7 +84,12 @@ def cunet_model():
         x = u_net_deconv_block(
             x, encoder_layer, n_filters, initializer, activation, dropout, skip
         )
-    outputs = multiply([inputs, x])
+    print('lol')
+    print(x)
+    print(inputs_)
+    outputs = Lambda(mult)([x,inputs_])
+    print(outputs)
+
     model = Model(inputs=[inputs, input_conditions], outputs=outputs)
     model.compile(
         optimizer=Adam(lr=config.LR, beta_1=0.5), loss=config.LOSS)

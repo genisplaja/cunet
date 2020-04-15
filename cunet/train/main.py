@@ -12,8 +12,8 @@ import os
 #from cunet.train.others.lock import get_lock
 
 
-logger = tf.get_logger()
-logger.setLevel(logging.INFO)
+#logger = tf.get_logger()
+#logger.setLevel(logging.INFO)
 
 
 def main():
@@ -22,10 +22,10 @@ def main():
     save_path = save_dir('models', name)
     write_config(save_path)
     #_ = get_lock()
-    logger.info('Starting the computation')
+    #logger.info('Starting the computation')
 
-    logger.info('Running training with config %s' % str(config))
-    logger.info('Getting the model')
+    #logger.info('Running training with config %s' % str(config))
+    #logger.info('Getting the model')
     if config.MODE == 'standard':
         model = unet_model()
     if config.MODE == 'conditioned':
@@ -34,17 +34,17 @@ def main():
         os.path.join(save_path, 'checkpoint'))
     if latest:
         model.load_weights(latest)
-        logger.info("Restored from {}".format(latest))
-    else:
-        logger.info("Initializing from scratch.")
+        #logger.info("Restored from {}".format(latest))
+    #else:
+        #logger.info("Initializing from scratch.")
 
-    logger.info('Preparing the genrators')
+    #logger.info('Preparing the genrators')
     # Here to be sure that has the same config
     from cunet.train.data_loader import dataset_generator
     ds_train = dataset_generator()
     ds_val = dataset_generator(val_set=True)
 
-    logger.info('Starting training for %s' % name)
+    #logger.info('Starting training for %s' % name)
 
     # USE VAL_STEPS!! 
     
@@ -62,9 +62,9 @@ def main():
             make_checkpoint(save_path)
         ])
 
-    logger.info('Saving model %s' % name)
+    #logger.info('Saving model %s' % name)
     model.save(os.path.join(save_path, name+'.h5'))
-    logger.info('Done!')
+    #logger.info('Done!')
     return
 
 

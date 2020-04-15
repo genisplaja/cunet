@@ -43,7 +43,7 @@ def make_earlystopping():
     return EarlyStopping(
         monitor='val_loss', min_delta=config.EARLY_STOPPING_MIN_DELTA,
         mode='min', patience=config.EARLY_STOPPING_PATIENCE,
-        verbose=1, restore_best_weights=True
+        verbose=1#, restore_best_weights=True
     )
 
 

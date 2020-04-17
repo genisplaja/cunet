@@ -7,6 +7,8 @@ from glob import glob
 import gc
 from joblib import Parallel, delayed
 from cunet.preprocess.config import config as config_pre
+from matplotlib import pyplot as plt
+import random
 
 
 logger = logging.getLogger('tensorflow')
@@ -76,3 +78,18 @@ def load_data(files):
 
 def get_data():
     return load_data(glob(os.path.join(config_pre.PATH_SPEC, '*.npz')))
+
+def get_indexes():
+    indexes = {}
+    print('Loading index file %s' % config.INDEXES_TRAIN)
+    data_tmp = np.load(config.INDEXES_TRAIN, allow_pickle=True)
+
+    for song in data_tmp.files:
+        indexes[song] = {}
+        if not song == 'config':
+            for part in data_tmp[song].item():
+                indexes[song][part] = {}
+                for part_num in data_tmp[song].item()[part].keys():
+                    f0 = data_tmp[song].item()[part][part_num]
+                    indexes[song][part][part_num] = f0
+    return indexes

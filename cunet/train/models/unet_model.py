@@ -11,7 +11,7 @@ from cunet.train.config import config
 def get_activation(name):
     if name == 'leaky_relu':
         return LeakyReLU(alpha=0.2)
-    return tf.keras.activations.get(name)
+    return tf.keras.layers.Activation(name)
 
 
 def u_net_conv_block(

@@ -3,13 +3,15 @@ import numpy as np
 import os
 import tensorflow as tf
 from cunet.train.config import config
-from cunet.train.load_data_offline import get_data
+from cunet.train.load_data_offline import (get_data, get_indexes)
 from cunet.train.others.val_files import VAL_FILES
 import random
 import logging
 import time
+from matplotlib import pyplot as plt
 
 DATA = get_data()
+INDEXES = get_indexes()
 logger = logging.getLogger('tensorflow')
 
 
@@ -81,6 +83,8 @@ def get_name(txt):
 
 
 def SATBBatchGenerator(valid=False):
+
+    counter = 0
 
     while True:
 
@@ -156,53 +160,54 @@ def SATBBatchGenerator(valid=False):
         
         # Scale down all the group chunks based off number of sources per group
         scaler = len(randsources_for_song) - zero_source_counter
-        out_shapes['mixture'] /= scaler
+        out_shapes['mixture'] = np.abs(out_shapes['mixture']) / scaler
 
         # Take random source as target
         got_target = False
         while got_target == False:
             try:
                 target = random.choice(randsources_for_song)
-                out_shapes['conditions'] = np.load(config.INDEXES_TRAIN, allow_pickle=True)[randsong].item()[target[:-1]][target[-1]][start_frame:end_frame,:]
-                #out_shapes['conditions'] = np.argmax(onehot_f0s,axis=1)
-                out_shapes['target'] = check_shape(DATA[randsong][target[:-1]][target[-1]][:,start_frame:end_frame]) / scaler
+                out_shapes['conditions'] = INDEXES[randsong][target[:-1]][target[-1]][start_frame:end_frame,:]
+                out_shapes['target'] = np.abs(check_shape(DATA[randsong][target[:-1]][target[-1]][:,start_frame:end_frame])) / scaler
                 got_target = True
             except Exception as e: 
                 print(e)
                 pass
-
+        
+        # if (counter % 16) == 0:
+        #     rand = random.randint(1,1000)
+        #     plt.imshow(np.abs(out_shapes['target'][:,:,0]))
+        #     plt.savefig(os.path.join('./debug_fig','spec'+'_target_'+str(rand)+'.png'))
+        #     plt.clf()
+        #     plt.imshow(np.abs(out_shapes['mixture'][:,:,0]))
+        #     plt.savefig(os.path.join('./debug_fig','spec'+'_mixture_'+str(rand)+'.png'))
+        counter = counter+1
         yield out_shapes
 
 
 def convert_to_estimator_input(d):
-    # just the mixture standar mode
-    inputs = tf.ensure_shape(d["mixture"], config.INPUT_SHAPE)
-    # if config.MODE == 'conditioned':
-    #     if config.CONTROL_TYPE == 'dense':
-    #         c_shape = (1, config.Z_DIM[0], config.Z_DIM[1])
-    #     if config.CONTROL_TYPE == 'cnn':
-    #         c_shape = (config.Z_DIM[0], config.Z_DIM[1])
-    #     cond = tf.ensure_shape(tf.reshape(d['conditions'], c_shape), c_shape)
-        # mixture + condition vector z
-    cond = tf.ensure_shape(d["conditions"], config.Z_DIM)
-    inputs = (inputs, cond)
-        # target -> isolate instrument
-    outputs = tf.ensure_shape(d["target"], config.INPUT_SHAPE)
+
+    inputs = (d["mixture"], d["conditions"])
+    outputs = d["target"]
+
     return (inputs, outputs)
 
 
 def dataset_generator(val_set=False):
+
+    out_shapes = {'mixture':(config.INPUT_SHAPE),'conditions':(config.Z_DIM),'target':(config.INPUT_SHAPE)}
     ds = tf.data.Dataset.from_generator(
         SATBBatchGenerator,
-        {'mixture': tf.complex64, 'target': tf.complex64, 'conditions': tf.float32},
+        output_types={'mixture': tf.float32, 'target': tf.float32, 'conditions': tf.float32},
+        output_shapes=out_shapes,
         args=[val_set]
     ).map(
-        convert_to_estimator_input, num_parallel_calls=config.NUM_THREADS
+        convert_to_estimator_input#, num_parallel_calls=config.NUM_THREADS
     ).batch(
         config.BATCH_SIZE, drop_remainder=True
-    ).prefetch(
-        buffer_size=config.N_PREFETCH
-    )
+    )#.prefetch(
+    #     buffer_size=config.N_PREFETCH
+    # )
     if not val_set:
         ds = ds.repeat()
     return ds

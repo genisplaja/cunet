@@ -1,7 +1,7 @@
 import tensorflow as tf
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import (
-    Input, Conv2D, Multiply, BatchNormalization, Lambda
+    Input, Conv2D, multiply, BatchNormalization, Lambda
 )
 from tensorflow.keras.optimizers import Adam
 from cunet.train.models.FiLM_utils import (
@@ -30,6 +30,15 @@ def u_net_conv_block(
 def mult(args):
     t1,t2 = args
     return Multiply()([t1, t2])
+
+def set_shape(t):
+    s = list(t.shape)
+    s[0] = config.BATCH_SIZE
+    return tf.reshape(t, s)
+
+def foo(t):
+    return t
+
 
 def cunet_model():
     # axis should be fr, time -> right not it's time freqs
@@ -83,12 +92,14 @@ def cunet_model():
             activation = config.ACTIVATION_DECODER
         x = u_net_deconv_block(
             x, encoder_layer, n_filters, initializer, activation, dropout, skip
-        )
-    print('lol')
-    print(x)
-    print(inputs_)
-    outputs = Lambda(mult)([x,inputs_])
-    print(outputs)
+        ) 
+
+    #x = set_shape(x)
+    #inputs_ = set_shape(inputs_)
+    # x_out = Lambda(foo)(x)
+    # outputs = Lambda(mult)([x_out,inputs_])
+
+    outputs = multiply([inputs_, x])
 
     model = Model(inputs=[inputs, input_conditions], outputs=outputs)
     model.compile(

@@ -19,6 +19,29 @@ def FiLM_simple_layer():
         x, gamma, beta = args
         s = list(x.shape)
         s[0] = 1
+        s[2] = 1
+        # avoid tile with the num of batch -> it is the same for both tensors
+
+        # print('Gamma Shape: '+str(gamma))
+        # print('Beta Shape: '+str(beta))
+        # print('Input Shape: '+str(x))
+
+        g = tf.tile(tf.expand_dims(tf.transpose(tf.expand_dims(gamma,-1), [0, 2, 1]), -1), s)
+        b = tf.tile(tf.expand_dims(tf.transpose(tf.expand_dims(beta,-1), [0, 2, 1]), -1), s)
+
+        # print('Gamma Shape: '+str(g))
+        # print('Beta Shape: '+str(b))
+
+        return tf.add(b, tf.multiply(x, g))
+    return Lambda(func)
+
+
+def FiLM_complex_layer():
+    """multiply scalar to a tensor"""
+    def func(args):
+        x, gamma, beta = args
+        s = list(x.shape)
+        s[0] = 1
         # avoid tile with the num of batch -> it is the same for both tensors
         # g = tf.tile(tf.expand_dims(gamma, 2), s)
         # b = tf.tile(tf.expand_dims(beta, 2), s)
@@ -27,21 +50,6 @@ def FiLM_simple_layer():
 
         # print(g)
 
-        return tf.add(b, tf.multiply(x, g))
-    return Lambda(func)
-
-
-def FiLM_complex_layer():
-    """multiply tensor to tensor"""
-    def func(args):
-        x, gamma, beta = args
-        s = list(x.shape)
-        # avoid tile with the num of batch -> same for both tensors
-        s[0] = 1
-        # avoid tile with the num of channels -> same for both tensors
-        s[-1] = 1
-        g = tf.tile(tf.expand_dims(gamma, 1), s)
-        b = tf.tile(tf.expand_dims(beta, 1), s)
         return tf.add(b, tf.multiply(x, g))
     return Lambda(func)
 

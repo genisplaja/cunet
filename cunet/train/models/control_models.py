@@ -74,18 +74,24 @@ def cnn_control(n_conditions, n_filters):
 
     input_conditions = Input(shape=(config.Z_DIM[0], config.Z_DIM[1]))
     initializer = tf.random_normal_initializer(stddev=0.02)
-    cnn = cnn_block(
+    
+    cnn_enc = cnn_block(
+        input_conditions, n_filters, config.Z_DIM, config.PADDING, initializer
+    )
+
+    cnn_dec = cnn_block(
         input_conditions, n_filters, config.Z_DIM, config.PADDING, initializer
     )
 
     gammas = Dense(
         n_conditions, input_dim=n_filters[-1], activation=config.ACT_G,
         kernel_initializer=initializer
-    )(cnn)
+    )(cnn_enc)
 
     betas = Dense(
         n_conditions, input_dim=n_filters[-1], activation=config.ACT_B,
         kernel_initializer=initializer
-    )(cnn)
+    )(cnn_enc)
+
     # both = Add()([gammas, betas])
     return input_conditions, gammas, betas

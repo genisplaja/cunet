@@ -6,28 +6,28 @@ class config(Config):
     groups = ['train', 'test']
     PATH_BASE = '../data/satb_dst/'
     PATH_RAW = setting(
-        default=PATH_BASE+'train/raw_audio',
-        train=PATH_BASE+'train/raw_audio', test=PATH_BASE+'test/raw_audio'
+        default=PATH_BASE+'test_usecase2/raw_audio',
+        train=PATH_BASE+'train/raw_audio', test=PATH_BASE+'test_usecase2/raw_audio'
     )
     PATH_SPEC = setting(
-        default=PATH_BASE+'train/complex',
-        train=PATH_BASE+'train/complex', test=PATH_BASE+'test/complex'
+        default=PATH_BASE+'test_usecase2/complex',
+        train=PATH_BASE+'train/complex', test=PATH_BASE+'test_usecase2/complex'
     )
     PATH_INDEXES = setting(
-        default=PATH_BASE+'train/indexes',
-        train=PATH_BASE+'train/indexes', test=PATH_BASE+'test/indexes'
+        default=PATH_BASE+'test_usecase2/indexes',
+        train=PATH_BASE+'train/indexes', test=PATH_BASE+'test_usecase2/indexes'
     )
     PATH_F0S = setting(
-        default=PATH_BASE+'train/f0s',
-        train=PATH_BASE+'train/f0s', test=PATH_BASE+'test/f0s'
+        default=PATH_BASE+'test_usecase2/f0s',
+        train=PATH_BASE+'train/f0s', test=PATH_BASE+'test_usecase2/f0s'
     )
     FR = 22050
     FFT_SIZE = 1024
     HOP = 256
     MODE = 'conditioned'
-    GROUP = 'train' # mainly used for spectrogram pre-processing: need to compute the mixture as well
+    GROUP = 'test' # mainly used for spectrogram pre-processing: need to compute the mixture as well
 
-    CQT_BINS = 180
+    CQT_BINS = 360
     MIN_FREQ = 32.7
     BIN_PER_OCT = 60
 

@@ -53,8 +53,12 @@ def cunet_model():
             n_conditions=config.N_CONDITIONS, n_neurons=config.N_NEURONS)
     if config.CONTROL_TYPE == 'cnn':
         input_conditions, gammas, betas = cnn_control(
-            n_conditions=512, n_filters=config.N_FILTERS)
-    inputs_ = FiLM_simple_layer()([inputs, gammas, betas])
+            n_conditions=config.N_CONDITIONS, n_filters=config.N_FILTERS)
+
+    if config.FILM_TYPE=='simple':
+        inputs_ = FiLM_simple_layer()([inputs, slice_tensor(0)(gammas), slice_tensor(0)(betas)])
+    elif config.FILM_TYPE=='complex':
+        inputs_ = FiLM_complex_layer()([inputs, gammas, betas])
 
     x = inputs_
 
@@ -94,12 +98,10 @@ def cunet_model():
             x, encoder_layer, n_filters, initializer, activation, dropout, skip
         ) 
 
-    #x = set_shape(x)
-    #inputs_ = set_shape(inputs_)
-    # x_out = Lambda(foo)(x)
-    # outputs = Lambda(mult)([x_out,inputs_])
+    if config.N_CONDITIONS==2:
+        x = FiLM_simple_layer()([x, slice_tensor(1)(gammas), slice_tensor(1)(betas)])
 
-    outputs = multiply([inputs_, x])
+    outputs = multiply([inputs, x])
 
     model = Model(inputs=[inputs, input_conditions], outputs=outputs)
     model.compile(

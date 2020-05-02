@@ -14,12 +14,24 @@ from matplotlib import pyplot as plt
 from tqdm import tqdm
 import librosa
 
-DEBUG_DIR = './debug' 
+DEBUG_DIR       = './debug' 
+F0_DEBUG_TRAIN  = os.path.join(DEBUG_DIR,'f0_plots','train')
+F0_DEBUG_TEST   = os.path.join(DEBUG_DIR,'f0_plots','test_2')
 
+def plot_and_save(data, save_dir, filename):
 
-def process_f0(f0, f_bins, n_freqs):
+	# Create target Directory if don't exist
+	if not os.path.exists(save_dir):
+	    os.mkdir(save_dir)
+
+	plt.plot(data)
+	plt.savefig(os.path.join(save_dir,filename))
+	plt.clf()
+
+def process_f0(f0, f_bins, n_freqs,part):
 	freqz = np.zeros((f0.shape[0], f_bins.shape[0]))
 	haha = np.digitize(f0, f_bins) - 1
+
 	idx2 = haha < n_freqs
 	haha = haha[idx2]
 	freqz[range(len(haha)), haha] = 1
@@ -27,6 +39,7 @@ def process_f0(f0, f_bins, n_freqs):
 	min_target = np.min(atb[range(len(haha)), haha])
 	atb = atb / min_target
 	atb[atb > 1] = 1
+
 	return atb
 
 def grid_to_bins(grid, start_bin_val, end_bin_val):
@@ -117,28 +130,43 @@ def get_indexes():
 				if not any(x in s_group for x in ['config','mixture']):
 
 					indexes[name][s_group] = dict()
+					parts = []
 
+					# If test set, only one singer
+					try:
+						parts = spec[s_group].item().keys()
+					except:
+						parts = ['1']
 					# Iterate through all parts
-					for i in spec[s_group].item().keys():
+
+					for i in parts:
 						s = []
 
+						try:
+							file_length = spec[s_group].item()[str(i)].shape[1]
+							part_name = str(name+'_'+s_group+'_'+i)
+						except:
+							file_length = spec[s_group].shape[1]
+							part_name = str(name+'_'+s_group)
+
 						indexes[name][s_group][str(i)] = None
-						# Get the number of frames for current spec.
-						file_length = spec[s_group].item()[str(i)].shape[1]
+
 						# Retrieve F0s file for current spec
-						part_name = str(name+'_'+s_group+'_'+i)
 						f0_file = [s for s in f0s_files if part_name in s]
 						f0_data = pd.read_csv(f0_file[0],names=["frame", "f0"]) 
 						f0_frame = f0_data['f0']
 						f0_resampled = signal.resample(f0_frame,file_length)
-
+						f0_resampled = f0_resampled.clip(0)
 						# One-hot encode F0 track
 						freq_grid = librosa.cqt_frequencies(config.CQT_BINS,config.MIN_FREQ,config.BIN_PER_OCT)
 						f_bins = grid_to_bins(freq_grid, 0.0, freq_grid[-1])
 						n_freqs = len(freq_grid)
 
-						atb = process_f0(f0_resampled, f_bins, n_freqs)
+						atb = process_f0(f0_resampled, f_bins, n_freqs, part_name)
 
+						plot_and_save(f0_frame,os.path.join(F0_DEBUG_TEST,part_name),'original.png')
+						plot_and_save(f0_resampled,os.path.join(F0_DEBUG_TEST,part_name),'resampled.png')
+						plot_and_save(np.argmax(atb,axis=1),os.path.join(F0_DEBUG_TEST,part_name),'argmax.png')
 						# for j in np.arange(0, file_length, config.STEP): # iterate over all spec frames
 
 						# 	s.append([j, atb[j,:]])

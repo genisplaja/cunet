@@ -13,7 +13,7 @@ class config(Config):
         simple_cnn='simple_cnn', complex_cnn='complex_cnn',
     )
     PATH_BASE = '../data/satb_dst/models'
-    NAME = 'satb_f0s'
+    NAME = '_satb_one_hot_f0s_360CQT_no_valid_world_f0_complex'
 
     PATH_MODEL = setting(
         default=os.path.join(PATH_BASE, 'conditioned/simple_cnn'),
@@ -23,8 +23,8 @@ class config(Config):
         simple_cnn=os.path.join(PATH_BASE, 'conditioned/simple_cnn'),
         complex_cnn=os.path.join(PATH_BASE, 'conditioned/complex_cnn')
     )
-    PATH_AUDIO = '../data/satb_dst/test/complex'
-    PATH_AUDIO_PRED = os.path.join(PATH_MODEL.default,NAME,'pred_audio')
+    PATH_AUDIO = '../data/satb_dst/test_usecase2/complex'
+    PATH_AUDIO_PRED = os.path.join(PATH_MODEL.default,NAME,'pred_audio_usecase2')
     TARGET = ['soprano', 'alto', 'tenor', 'bass']  # ['vocals', 'bass', 'bass_vocals'] -> not ready yet for complex conditions
     INSTRUMENTS = ['soprano', 'alto', 'tenor', 'bass']  # to check that has the same order than the training
     OVERLAP = 0

@@ -54,9 +54,9 @@ def main():
         steps_per_epoch=config.N_BATCH,
         epochs=config.N_EPOCH,
         verbose=1,
-        validation_steps=config.N_BATCH//config.BATCH_SIZE,
+        validation_steps=config.N_BATCH//2,
         callbacks=[
-            make_earlystopping(),
+            #make_earlystopping(),
             make_reduce_lr(),
             make_tensorboard(save_path),
             make_checkpoint(save_path)

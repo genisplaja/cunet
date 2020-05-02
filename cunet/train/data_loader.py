@@ -9,9 +9,14 @@ import random
 import logging
 import time
 from matplotlib import pyplot as plt
+import soundfile
+import librosa
+from cunet.preprocess.config import config as config_prepro
 
-DATA = get_data()
-INDEXES = get_indexes()
+DATA_TRAIN = get_data()
+INDEXES_TRAIN = get_indexes()
+DATA_VAL = get_data(path=os.path.join(config.PATH_BASE,'valid/complex'))
+INDEXES_VAL = get_indexes(path=config.INDEXES_VAL)
 logger = logging.getLogger('tensorflow')
 
 
@@ -21,6 +26,8 @@ def check_shape(data):
         n = data.shape[0] - 1
     return np.expand_dims(data[:n, :], axis=2)
 
+def istft(data):
+    return librosa.istft(data)
 
 def get_name(txt):
     return os.path.basename(os.path.normpath(txt)).replace('.npz', '')
@@ -89,99 +96,115 @@ def SATBBatchGenerator(valid=False):
     while True:
 
         sources = ['soprano','tenor','bass','alto']
-        out_shapes = {'mixture':np.zeros(config.INPUT_SHAPE), 
-                      'target':np.zeros(config.INPUT_SHAPE), 
-                      'conditions':np.zeros(config.Z_DIM)}
+        out_shapes = {'mixture':np.zeros((config.BATCH_SIZE,config.INPUT_SHAPE[0],config.INPUT_SHAPE[1],1)), 
+                      'target':np.zeros((config.BATCH_SIZE,config.INPUT_SHAPE[0],config.INPUT_SHAPE[1],1)), 
+                      'conditions':np.zeros((config.BATCH_SIZE,config.Z_DIM[0],config.Z_DIM[1]))}
 
         # Get rand song
         if not valid:
-            randsong = random.choice([i for i in DATA.keys() if i is not VAL_FILES])
+            DATA = DATA_TRAIN
+            INDEXES = INDEXES_TRAIN
         else:
-            randsong = random.choice(VAL_FILES)
+            DATA = DATA_VAL
+            INDEXES = INDEXES_VAL
+
+        randsong = random.choice([i for i in DATA.keys()])
 
         # Get all available part from chosen song
         part_count = DATA[randsong]
 
-        # Use-Case: At most one singer per part
-        if (config.USE_CASE==0):
-            max_num_singer_per_part = 1
-            randsources = random.sample(sources, random.randint(1,len(sources)))                   # Randomize source pick if at most one singer per part
-        # Use-Case: Exactly one singer per part
-        elif (config.USE_CASE==1):
-            max_num_singer_per_part = 1
-            randsources = sources                                                                  # Take all sources + Set num singer = 1
-        # Use-Case: At least one singer per part
-        else:
-            max_num_singer_per_part = 4
-            randsources = sources                                                                  # Take all sources + Set max num of singer = 4 
+        for i in range(config.BATCH_SIZE):
 
-        start_frame = 0
-        end_frame   = 0
-
-        # Get Start and End samples. Pick random part to calculate start/end spl
-        while start_frame == 0:
-            try:
-                randpart = random.choice(sources)
-                start_frame = random.randint(0,DATA[randsong][randpart]['1'].shape[1]-config.INPUT_SHAPE[1]) # This assume that all stems are the same length
-            except Exception as e: 
-                print(e)
-                pass
-
-        end_frame   = start_frame+config.INPUT_SHAPE[1]
-
-        # Get Random Sources: 
-        randsources_for_song = [] 
-        for source in randsources:
-            # If no singer in part, default it to one and fill array with zeros later
-            singers_for_part = len(DATA[randsong][randpart].keys())
-            if singers_for_part>0:
-                max_for_part = singers_for_part if singers_for_part < max_num_singer_per_part else max_num_singer_per_part
+            # Use-Case: At most one singer per part
+            if (config.USE_CASE==0):
+                max_num_singer_per_part = 1
+                randsources = random.sample(sources, random.randint(1,len(sources)))                   # Randomize source pick if at most one singer per part
+            # Use-Case: Exactly one singer per part
+            elif (config.USE_CASE==1):
+                max_num_singer_per_part = 1
+                randsources = sources                                                                  # Take all sources + Set num singer = 1
+            # Use-Case: At least one singer per part
             else:
-                max_for_part = 1 
+                max_num_singer_per_part = 4
+                randsources = sources                                                                  # Take all sources + Set max num of singer = 4 
 
-            num_singer_per_part = random.randint(1,max_for_part)                      # Get random number of singer per part based on max_for_part
-            singer_num = random.sample(range(1,max_for_part+1),num_singer_per_part)   # Get random part number for the number of singer based off max_for_part
-            randsources_for_part = np.repeat(source,num_singer_per_part)              # Repeat the parts according to the number of singer per group
-            randsources_for_part = ["{}{}".format(a_, b_) for a_, b_ in zip(randsources_for_part, singer_num)] # Concatenate strings for part name
-            randsources_for_song+=randsources_for_part
+            start_frame = 0
+            end_frame   = 0
 
-        # Retrieve the chunks and store them in output shapes 
-        zero_source_counter = 0                                        
-        for source in randsources_for_song:
+            # Get Start and End samples. Pick random part to calculate start/end spl
+            while start_frame == 0:
+                try:
+                    randpart = random.choice(sources)
+                    start_frame = random.randint(0,DATA[randsong][randpart]['1'].shape[1]-config.INPUT_SHAPE[1]) # This assume that all stems are the same length
+                except Exception as e: 
+                    print(e)
+                    pass
 
-            # Try to retrieve chunk. If part doesn't exist, create array of zeros instead
-            try:
-                source_chunk = DATA[randsong][source[:-1]][source[-1]][:,start_frame:end_frame] # Retrieve part's chunk
-            except:
-                zero_source_counter += 1
-                source_chunk = np.zeros(config.INPUT_SHAPE)
+            end_frame   = start_frame+config.INPUT_SHAPE[1]
 
-            out_shapes['mixture'] = np.add(out_shapes['mixture'],check_shape(source_chunk)) # Add the chunk to the mix
-        
-        # Scale down all the group chunks based off number of sources per group
-        scaler = len(randsources_for_song) - zero_source_counter
-        out_shapes['mixture'] = np.abs(out_shapes['mixture']) / scaler
+            # Get Random Sources: 
+            randsources_for_song = [] 
+            for source in randsources:
+                # If no singer in part, default it to one and fill array with zeros later
+                singers_for_part = len(DATA[randsong][randpart].keys())
+                if singers_for_part>0:
+                    max_for_part = singers_for_part if singers_for_part < max_num_singer_per_part else max_num_singer_per_part
+                else:
+                    max_for_part = 1 
 
-        # Take random source as target
-        got_target = False
-        while got_target == False:
-            try:
-                target = random.choice(randsources_for_song)
-                out_shapes['conditions'] = INDEXES[randsong][target[:-1]][target[-1]][start_frame:end_frame,:]
-                out_shapes['target'] = np.abs(check_shape(DATA[randsong][target[:-1]][target[-1]][:,start_frame:end_frame])) / scaler
-                got_target = True
-            except Exception as e: 
-                print(e)
-                pass
-        
-        # if (counter % 16) == 0:
-        #     rand = random.randint(1,1000)
-        #     plt.imshow(np.abs(out_shapes['target'][:,:,0]))
-        #     plt.savefig(os.path.join('./debug_fig','spec'+'_target_'+str(rand)+'.png'))
-        #     plt.clf()
-        #     plt.imshow(np.abs(out_shapes['mixture'][:,:,0]))
-        #     plt.savefig(os.path.join('./debug_fig','spec'+'_mixture_'+str(rand)+'.png'))
-        counter = counter+1
+                num_singer_per_part = random.randint(1,max_for_part)                      # Get random number of singer per part based on max_for_part
+                singer_num = random.sample(range(1,max_for_part+1),num_singer_per_part)   # Get random part number for the number of singer based off max_for_part
+                randsources_for_part = np.repeat(source,num_singer_per_part)              # Repeat the parts according to the number of singer per group
+                randsources_for_part = ["{}{}".format(a_, b_) for a_, b_ in zip(randsources_for_part, singer_num)] # Concatenate strings for part name
+                randsources_for_song+=randsources_for_part
+
+            # Retrieve the chunks and store them in output shapes 
+            zero_source_counter = 0                                        
+            for source in randsources_for_song:
+
+                # Try to retrieve chunk. If part doesn't exist, create array of zeros instead
+                try:
+                    source_chunk = np.abs(DATA[randsong][source[:-1]][source[-1]][:,start_frame:end_frame]) # Retrieve part's chunk
+                except:
+                    zero_source_counter += 1
+                    source_chunk = np.zeros(config.INPUT_SHAPE)
+
+                out_shapes['mixture'][i] = np.add(out_shapes['mixture'][i],check_shape(source_chunk)) # Add the chunk to the mix
+            
+            # Scale down all the group chunks based off number of sources per group
+            scaler = len(randsources_for_song) - zero_source_counter
+            out_shapes['mixture'][i] = out_shapes['mixture'][i] / scaler
+
+            # Take random source as target
+            got_target = False
+            while got_target == False:
+                try:
+                    target = random.choice(randsources_for_song)
+                    out_shapes['conditions'][i] = INDEXES[randsong][target[:-1]][target[-1]][start_frame:end_frame,:]
+                    out_shapes['target'][i] = check_shape(np.abs(DATA[randsong][target[:-1]][target[-1]][:,start_frame:end_frame])) / scaler
+                    got_target = True
+                except Exception as e: 
+                    print(e)
+                    pass
+            
+            #if (counter % 16) == 0:
+                # rand = random.randint(1,1000)
+                # soundfile.write(
+                #     os.path.join('./debug_fig','spec'+'_mixture_'+str(rand)+'.wav'), 
+                #     istft(out_shapes['mixture'][i]), 
+                #     config_prepro.FR, 'PCM_24'
+                # )
+                # soundfile.write(
+                #     os.path.join('./debug_fig','spec'+'_target_'+str(rand)+'.wav'), 
+                #     istft(out_shapes['target'][i]), 
+                #     config_prepro.FR, 'PCM_24'
+                # )
+                # print('F0s Shape: '+str(np.shape(out_shapes['conditions'][i])))
+                # print('F0s: '+str(np.where(out_shapes['conditions'][i]>0)))
+
+                # print('Target Shape: '+str(np.shape(out_shapes['target'][i])))
+                # print('Mixture Shape: '+str(np.shape(out_shapes['mixture'][i])))
+
         yield out_shapes
 
 
@@ -195,7 +218,10 @@ def convert_to_estimator_input(d):
 
 def dataset_generator(val_set=False):
 
-    out_shapes = {'mixture':(config.INPUT_SHAPE),'conditions':(config.Z_DIM),'target':(config.INPUT_SHAPE)}
+    out_shapes = {'mixture':(config.BATCH_SIZE,config.INPUT_SHAPE[0],config.INPUT_SHAPE[1],1), 
+                'target':(config.BATCH_SIZE,config.INPUT_SHAPE[0],config.INPUT_SHAPE[1],1), 
+                'conditions':(config.BATCH_SIZE,config.Z_DIM[0],config.Z_DIM[1])}
+
     ds = tf.data.Dataset.from_generator(
         SATBBatchGenerator,
         output_types={'mixture': tf.float32, 'target': tf.float32, 'conditions': tf.float32},
@@ -203,9 +229,9 @@ def dataset_generator(val_set=False):
         args=[val_set]
     ).map(
         convert_to_estimator_input#, num_parallel_calls=config.NUM_THREADS
-    ).batch(
-        config.BATCH_SIZE, drop_remainder=True
-    )#.prefetch(
+    )#.batch(
+    #     config.BATCH_SIZE, drop_remainder=True
+    # )#.prefetch(
     #     buffer_size=config.N_PREFETCH
     # )
     if not val_set:

@@ -67,14 +67,14 @@ class config(Config):
         simple_cnn='cnn', complex_cnn='cnn'
     )
     FILM_TYPE = setting(
-        'complex', simple_dense='simple', complex_dense='complex',
+        'simple', simple_dense='simple', complex_dense='complex',
         simple_cnn='simple', complex_cnn='complex'
     )
     Z_DIM = [INPUT_SHAPE[1],config_prepro.CQT_BINS+1] # f0 point for each spec frame
     ACT_G = 'linear'
     ACT_B = 'linear'
     N_CONDITIONS = setting(
-        512, simple_dense=6, complex_dense=1008,
+        6, simple_dense=6, complex_dense=1008,
         simple_cnn=6, complex_cnn=1008
     )
 

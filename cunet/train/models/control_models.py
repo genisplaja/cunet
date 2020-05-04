@@ -51,6 +51,7 @@ def cnn_block(
     
     kernel_shape = 10
 
+    print('cnn block')
     for i, (f, p) in enumerate(zip(n_filters, padding)):
         extra = i != 0
         x = Conv1D(f, kernel_shape, padding=p, activation=activation,
@@ -58,6 +59,7 @@ def cnn_block(
         if extra:
             x = Dropout(0.5)(x)
             x = BatchNormalization(momentum=0.9, scale=True)(x)
+        print(x)
     return x
 
 
@@ -79,9 +81,8 @@ def cnn_control(n_conditions, n_filters):
         input_conditions, n_filters, config.Z_DIM, config.PADDING, initializer
     )
 
-    cnn_dec = cnn_block(
-        input_conditions, n_filters, config.Z_DIM, config.PADDING, initializer
-    )
+    print('lol')
+    print(cnn_enc)
 
     gammas = Dense(
         n_conditions, input_dim=n_filters[-1], activation=config.ACT_G,
@@ -92,6 +93,9 @@ def cnn_control(n_conditions, n_filters):
         n_conditions, input_dim=n_filters[-1], activation=config.ACT_B,
         kernel_initializer=initializer
     )(cnn_enc)
+
+    print(gammas)
+    print(betas)
 
     # both = Add()([gammas, betas])
     return input_conditions, gammas, betas

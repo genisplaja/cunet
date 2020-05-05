@@ -13,7 +13,7 @@ class config(Config):
 
     MODE = setting(default='conditioned', standard='standard')
 
-    NAME = '_test'
+    NAME = '_satb_one_hot_original_simple'
     ADD_TIME = False    # add the time and date in the name
     TARGET = 'vocals'   # only for standard version
 
@@ -21,16 +21,18 @@ class config(Config):
     PATH_BASE = '../data/satb_dst/'
     # default = conditioned
     INDEXES_TRAIN = setting(
-        default=os.path.join(
-            PATH_BASE, 'train/indexes/indexes_SATB_F0s.npz'),
-        standard=os.path.join(
-            PATH_BASE, 'train/indexes/indexes_SATB_F0s.npz')
+        default={
+        'soprano':[1,0,0,0],
+        'alto':[0,1,0,0],
+        'tenor':[0,0,1,0],
+        'bass':[0,0,0,1]
+        }
     )
     INDEXES_VAL = setting(
         default=os.path.join(
-            PATH_BASE, 'valid/indexes/indexes_SATB_F0s.npz'),
+            PATH_BASE, ''),
         standard=os.path.join(
-            PATH_BASE, 'valid/indexes/indexes_SATB_F0s.npz')
+            PATH_BASE, '')
     )
 
     NUM_THREADS = 32#tf.data.experimental.AUTOTUNE   # 32
@@ -63,24 +65,24 @@ class config(Config):
 
     # control parameters
     CONTROL_TYPE = setting(
-        'cnn', simple_dense='dense', complex_dense='dense',
+        'dense', simple_dense='dense', complex_dense='dense',
         simple_cnn='cnn', complex_cnn='cnn'
     )
     FILM_TYPE = setting(
-        'complex', simple_dense='simple', complex_dense='complex',
+        'simple', simple_dense='simple', complex_dense='complex',
         simple_cnn='simple', complex_cnn='complex'
     )
-    Z_DIM = [INPUT_SHAPE[1],config_prepro.CQT_BINS+1] # f0 point for each spec frame
+    Z_DIM = 4 # f0 point for each spec frame
     ACT_G = 'linear'
     ACT_B = 'linear'
     N_CONDITIONS = setting(
-        512, simple_dense=6, complex_dense=1008,
+        6, simple_dense=6, complex_dense=1008,
         simple_cnn=6, complex_cnn=1008
     )
 
     # cnn control
     N_FILTERS = setting(
-        [16, 64, 256], simple_cnn=[16, 32, 64], complex_cnn=[32, 64, 256]
+        [16, 32, 64], simple_cnn=[16, 32, 64], complex_cnn=[32, 64, 256]
     )
     PADDING = ['same', 'same', 'same']
     # Dense control

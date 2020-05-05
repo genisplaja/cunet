@@ -14,9 +14,7 @@ import librosa
 from cunet.preprocess.config import config as config_prepro
 
 DATA_TRAIN = get_data()
-INDEXES_TRAIN = get_indexes()
 DATA_VAL = get_data(path=os.path.join(config.PATH_BASE,'valid/complex'))
-INDEXES_VAL = get_indexes(path=config.INDEXES_VAL)
 logger = logging.getLogger('tensorflow')
 
 
@@ -98,15 +96,13 @@ def SATBBatchGenerator(valid=False):
         sources = ['soprano','tenor','bass','alto']
         out_shapes = {'mixture':np.zeros((config.BATCH_SIZE,config.INPUT_SHAPE[0],config.INPUT_SHAPE[1],1)), 
                       'target':np.zeros((config.BATCH_SIZE,config.INPUT_SHAPE[0],config.INPUT_SHAPE[1],1)), 
-                      'conditions':np.zeros((config.BATCH_SIZE,config.Z_DIM[0],config.Z_DIM[1]))}
+                      'conditions':np.zeros((config.BATCH_SIZE,1,config.Z_DIM))}
 
         # Get rand song
         if not valid:
             DATA = DATA_TRAIN
-            INDEXES = INDEXES_TRAIN
         else:
             DATA = DATA_VAL
-            INDEXES = INDEXES_VAL
 
         randsong = random.choice([i for i in DATA.keys()])
 
@@ -180,37 +176,26 @@ def SATBBatchGenerator(valid=False):
             while got_target == False:
                 try:
                     target = random.choice(randsources_for_song)
-                    out_shapes['conditions'][i] = INDEXES[randsong][target[:-1]][target[-1]][start_frame:end_frame,:]
+                    out_shapes['conditions'][i] = config.INDEXES_TRAIN[target[:-1]]
                     out_shapes['target'][i] = check_shape(np.abs(DATA[randsong][target[:-1]][target[-1]][:,start_frame:end_frame])) / scaler
                     got_target = True
                 except Exception as e: 
                     print(e)
                     pass
-            
-            #if (counter % 16) == 0:
-                # rand = random.randint(1,1000)
-                # soundfile.write(
-                #     os.path.join('./debug_fig','spec'+'_mixture_'+str(rand)+'.wav'), 
-                #     istft(out_shapes['mixture'][i]), 
-                #     config_prepro.FR, 'PCM_24'
-                # )
-                # soundfile.write(
-                #     os.path.join('./debug_fig','spec'+'_target_'+str(rand)+'.wav'), 
-                #     istft(out_shapes['target'][i]), 
-                #     config_prepro.FR, 'PCM_24'
-                # )
-                # print('F0s Shape: '+str(np.shape(out_shapes['conditions'][i])))
-                # print('F0s: '+str(np.where(out_shapes['conditions'][i]>0)))
-
-                # print('Target Shape: '+str(np.shape(out_shapes['target'][i])))
-                # print('Mixture Shape: '+str(np.shape(out_shapes['mixture'][i])))
 
         yield out_shapes
 
 
 def convert_to_estimator_input(d):
 
-    inputs = (d["mixture"], d["conditions"])
+    if config.CONTROL_TYPE == 'dense':
+        c_shape = (config.BATCH_SIZE,1, config.Z_DIM)
+    if config.CONTROL_TYPE == 'cnn':
+        c_shape = (config.BATCH_SIZE,config.Z_DIM, 1)
+
+    cond = tf.reshape(d['conditions'], c_shape)
+
+    inputs = (d["mixture"], cond)
     outputs = d["target"]
 
     return (inputs, outputs)
@@ -220,7 +205,7 @@ def dataset_generator(val_set=False):
 
     out_shapes = {'mixture':(config.BATCH_SIZE,config.INPUT_SHAPE[0],config.INPUT_SHAPE[1],1), 
                 'target':(config.BATCH_SIZE,config.INPUT_SHAPE[0],config.INPUT_SHAPE[1],1), 
-                'conditions':(config.BATCH_SIZE,config.Z_DIM[0],config.Z_DIM[1])}
+                'conditions':(config.BATCH_SIZE,1,config.Z_DIM)}
 
     ds = tf.data.Dataset.from_generator(
         SATBBatchGenerator,

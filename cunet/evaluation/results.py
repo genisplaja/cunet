@@ -9,6 +9,7 @@ import logging
 import pandas as pd
 from cunet.evaluation.config import config
 from cunet.preprocess.config import config as config_prepro
+from cunet.train.config import config as config_train
 from cunet.train.load_data_offline import normlize_complex
 from cunet.preprocess.spectrogram import spec_complex
 from cunet.train.models.FiLM_utils import FiLM_simple_layer
@@ -71,32 +72,24 @@ def reconstruct(pred_mag, orig_mix_phase, orig_mix_mag):
     return istft(pred_spec)
 
 
-def prepare_a_song(spec, num_frames, num_bands, cond):
+def prepare_a_song(spec, num_frames, num_bands):
     size = spec.shape[1]
 
     segments = np.zeros(
         (size//(num_frames-config.OVERLAP)+1, num_bands, num_frames, 1),
         dtype=np.float32)
 
-    segments_cond = np.zeros(
-        (size//(num_frames-config.OVERLAP)+1, num_frames, config_prepro.CQT_BINS+1),
-        dtype=np.float32)
-
     for index, i in enumerate(np.arange(0, size, num_frames-config.OVERLAP)):
         segment = spec[:num_bands, i:i+num_frames]
-        segment_cond = cond[i:i+num_frames,:]
         tmp = segment.shape[1]
 
         if tmp != num_frames:
             segment = np.zeros((num_bands, num_frames), dtype=np.float32)
-            segment_cond = np.zeros((num_frames,config_prepro.CQT_BINS+1), dtype=np.float32)
             segment[:, :tmp] = spec[:num_bands, i:i+num_frames]
-            segment_cond[:tmp,:] = cond[i:i+num_frames,:]
 
         segments[index] = np.expand_dims(segment, axis=2)
-        segments_cond[index] = segment_cond
 
-    return segments, segments_cond
+    return segments
 
 
 def separate_audio(path_audio, path_output, model, cond):
@@ -142,17 +135,14 @@ def analize_spec(orig_mix_spec, model, cond):
             pred_mag = model.predict(x)
         if config.MODE == 'conditioned':
             num_bands, num_frames = model.input_shape[0][1:3]
-            x, cond_seg = prepare_a_song(orig_mix_mag, num_frames, num_bands, cond)
+            x = prepare_a_song(orig_mix_mag, num_frames, num_bands)
 
-            randname = random.randint(1,1000)
-            #plot_f0(np.reshape(cond_seg,(-1,config_prepro.CQT_BINS+1)),str(randname))
-            #plot_spec(np.squeeze(concatenate(x, orig_mix_spec.shape), axis=-1),orig_mix_phase,str(randname))
-            # if config.EMB_TYPE == 'dense':
-            #     cosnd = cond.reshape(1, -1)
-            # if config.EMB_TYPE == 'cnn':
-            #     cond = cond.reshape(-1, 1)
-            # tmp = np.zeros((x.shape[0], *cond.shape))
-            # tmp[:] = cond
+            if config.EMB_TYPE == 'dense':
+                cond = cond.reshape(1, -1)
+            if config.EMB_TYPE == 'cnn':
+                cond = cond.reshape(-1, 1)
+            tmp = np.zeros((x.shape[0], *cond.shape))
+            tmp[:] = cond
             print('Prepared Spec X:'+str(np.shape(x)))
             print('Prepared Spec Cond:'+str(np.shape(cond_seg)))
             pred_mag = model.predict([x, cond_seg])
@@ -184,8 +174,7 @@ def do_an_exp(audio, target_source, model, file=''):
 
     # predicted separation
     file_length = audio[target_source].shape[1]
-    cond = np.zeros((file_length,config_prepro.CQT_BINS+1))
-    cond = get_f0(file, target_source, '1') # Only cover use-case#1 here: exactly one singer per part
+    cond = config_train.INDEXES_TRAIN[target_source]
 
     print('Spec Target: '+str(np.shape(audio[target_source])))
     print('Spec Acc: '+str(np.shape(accompaniment)))

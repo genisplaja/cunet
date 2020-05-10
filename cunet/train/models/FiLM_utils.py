@@ -11,6 +11,7 @@ def FiLM_simple_layer():
         # avoid tile with the num of batch -> it is the same for both tensors
         g = tf.tile(tf.expand_dims(tf.expand_dims(gamma, 2), 3), s)
         b = tf.tile(tf.expand_dims(tf.expand_dims(beta, 2), 3), s)
+
         return tf.add(b, tf.multiply(x, g))
     return Lambda(func)
 

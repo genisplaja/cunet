@@ -93,10 +93,10 @@ def SATBBatchGenerator(valid=False):
 
     while True:
 
-        sources = ['soprano','tenor','bass','alto']
+        sources = ['soprano','alto','tenor','bass']
         out_shapes = {'mixture':np.zeros((config.BATCH_SIZE,config.INPUT_SHAPE[0],config.INPUT_SHAPE[1],1)), 
                       'target':np.zeros((config.BATCH_SIZE,config.INPUT_SHAPE[0],config.INPUT_SHAPE[1],1)), 
-                      'conditions':np.zeros((config.BATCH_SIZE,1,config.Z_DIM))}
+                      'conditions':np.zeros((config.BATCH_SIZE,config.Z_DIM,1))}
 
         # Get rand song
         if not valid:
@@ -162,6 +162,7 @@ def SATBBatchGenerator(valid=False):
                 try:
                     source_chunk = np.abs(DATA[randsong][source[:-1]][source[-1]][:,start_frame:end_frame]) # Retrieve part's chunk
                 except:
+                    print('No source found for: '+str(source))
                     zero_source_counter += 1
                     source_chunk = np.zeros(config.INPUT_SHAPE)
 
@@ -176,7 +177,7 @@ def SATBBatchGenerator(valid=False):
             while got_target == False:
                 try:
                     target = random.choice(randsources_for_song)
-                    out_shapes['conditions'][i] = config.INDEXES_TRAIN[target[:-1]]
+                    out_shapes['conditions'][i] = np.expand_dims(config.INDEXES_TRAIN[target[:-1]],axis=1)
                     out_shapes['target'][i] = check_shape(np.abs(DATA[randsong][target[:-1]][target[-1]][:,start_frame:end_frame])) / scaler
                     got_target = True
                 except Exception as e: 
@@ -205,7 +206,7 @@ def dataset_generator(val_set=False):
 
     out_shapes = {'mixture':(config.BATCH_SIZE,config.INPUT_SHAPE[0],config.INPUT_SHAPE[1],1), 
                 'target':(config.BATCH_SIZE,config.INPUT_SHAPE[0],config.INPUT_SHAPE[1],1), 
-                'conditions':(config.BATCH_SIZE,1,config.Z_DIM)}
+                'conditions':(config.BATCH_SIZE,config.Z_DIM,1)}
 
     ds = tf.data.Dataset.from_generator(
         SATBBatchGenerator,

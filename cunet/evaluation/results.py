@@ -141,11 +141,13 @@ def analize_spec(orig_mix_spec, model, cond):
                 cond = cond.reshape(1, -1)
             if config.EMB_TYPE == 'cnn':
                 cond = cond.reshape(-1, 1)
+
             tmp = np.zeros((x.shape[0], *cond.shape))
             tmp[:] = cond
             print('Prepared Spec X:'+str(np.shape(x)))
-            print('Prepared Spec Cond:'+str(np.shape(cond_seg)))
-            pred_mag = model.predict([x, cond_seg])
+            print('Single Cond:'+str(cond))
+            print('Prepared Spec Cond:'+str(np.shape(tmp)))
+            pred_mag = model.predict([x, tmp])
 
         pred_mag = np.squeeze(
             concatenate(pred_mag, orig_mix_spec.shape), axis=-1)
@@ -173,9 +175,10 @@ def do_an_exp(audio, target_source, model, file=''):
     acc = istft(accompaniment)
 
     # predicted separation
-    file_length = audio[target_source].shape[1]
-    cond = config_train.INDEXES_TRAIN[target_source]
+    cond = np.asarray(config_train.INDEXES_TRAIN[target_source])
 
+    print('TARGET SOURCE: '+target_source)
+    print('Condition Vector: '+str(cond))
     print('Spec Target: '+str(np.shape(audio[target_source])))
     print('Spec Acc: '+str(np.shape(accompaniment)))
     print('Spec Mixture: '+str(np.shape(audio['mixture'])))
@@ -270,7 +273,7 @@ def main():
     files = glob(os.path.join(config.PATH_AUDIO, '*.npz'))
     if config.MODE == 'conditioned':
         results = create_pandas(files)
-        model, path_results = load_checkpoint(os.path.join(config.PATH_MODEL,config.NAME),'ckpt_144-0.00334')
+        model, path_results = load_checkpoint(os.path.join(config.PATH_MODEL,config.NAME),'ckpt_195-0.00417')
     for target in config.TARGET:
         if config.MODE == 'standard':
             i = 0

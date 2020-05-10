@@ -13,7 +13,7 @@ class config(Config):
 
     MODE = setting(default='conditioned', standard='standard')
 
-    NAME = '_satb_one_hot_original_simple'
+    NAME = '_satb_one_hot_original_complex'
     ADD_TIME = False    # add the time and date in the name
     TARGET = 'vocals'   # only for standard version
 
@@ -23,9 +23,9 @@ class config(Config):
     INDEXES_TRAIN = setting(
         default={
         'soprano':[1,0,0,0],
-        'alto':[0,1,0,0],
-        'tenor':[0,0,1,0],
-        'bass':[0,0,0,1]
+        'alto':   [0,1,0,0],
+        'tenor':  [0,0,1,0],
+        'bass':   [0,0,0,1]
         }
     )
     INDEXES_VAL = setting(
@@ -65,28 +65,28 @@ class config(Config):
 
     # control parameters
     CONTROL_TYPE = setting(
-        'dense', simple_dense='dense', complex_dense='dense',
+        'cnn', simple_dense='dense', complex_dense='dense',
         simple_cnn='cnn', complex_cnn='cnn'
     )
     FILM_TYPE = setting(
-        'simple', simple_dense='simple', complex_dense='complex',
+        'complex', simple_dense='simple', complex_dense='complex',
         simple_cnn='simple', complex_cnn='complex'
     )
     Z_DIM = 4 # f0 point for each spec frame
     ACT_G = 'linear'
     ACT_B = 'linear'
     N_CONDITIONS = setting(
-        6, simple_dense=6, complex_dense=1008,
+        1008, simple_dense=6, complex_dense=1008,
         simple_cnn=6, complex_cnn=1008
     )
 
     # cnn control
     N_FILTERS = setting(
-        [16, 32, 64], simple_cnn=[16, 32, 64], complex_cnn=[32, 64, 256]
+        [32, 64, 256], simple_cnn=[16, 32, 64], complex_cnn=[32, 64, 256]
     )
-    PADDING = ['same', 'same', 'same']
+    PADDING = ['same', 'same', 'valid']
     # Dense control
     N_NEURONS = setting(
-        [16, 64, 256], simple_dense=[16, 64, 256],
+        [16, 256, 1024], simple_dense=[16, 64, 256],
         complex_dense=[16, 256, 1024]
     )

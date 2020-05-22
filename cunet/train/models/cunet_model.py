@@ -70,7 +70,7 @@ def cunet_model():
             complex_index += n_filters
 
         x = u_net_conv_block(
-            x, n_filters, initializer, gammas, betas,
+            x, n_filters, initializer, gamma, beta,
             activation=config.ACTIVATION_ENCODER, film_type=config.FILM_TYPE
         )
         encoder_layers.append(x)

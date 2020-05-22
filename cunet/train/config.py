@@ -13,7 +13,7 @@ class config(Config):
 
     MODE = setting(default='conditioned', standard='standard')
 
-    NAME = '_satb_one_hot_f0s_360CQT_no_valid_world_f0_simple_x2_film'
+    NAME = '_satb_one_hot_f0s_360CQT_no_valid_world_f0_film_encoder'
     ADD_TIME = False    # add the time and date in the name
     TARGET = 'vocals'   # only for standard version
 
@@ -80,9 +80,9 @@ class config(Config):
 
     # cnn control
     N_FILTERS = setting(
-        [16, 64, 256], simple_cnn=[16, 32, 64], complex_cnn=[32, 64, 256]
+        [16, 32, 64], simple_cnn=[16, 32, 64], complex_cnn=[32, 64, 256]
     )
-    PADDING = ['same', 'same', 'same']
+    PADDING = ['same', 'same', 'valid']
     # Dense control
     N_NEURONS = setting(
         [16, 64, 256], simple_dense=[16, 64, 256],

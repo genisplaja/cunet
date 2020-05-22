@@ -20,10 +20,10 @@ def u_net_conv_block(
     x = Conv2D(n_filters, kernel_size=kernel_size,  padding=padding,
                strides=strides, kernel_initializer=initializer)(inputs)
     x = BatchNormalization(momentum=0.9, scale=True)(x)
-    # if film_type == 'simple':
-    #     x = FiLM_simple_layer()([x, gamma, beta])
-    # if film_type == 'complex':
-    #     x = FiLM_complex_layer()([x, gamma, beta])
+    if film_type == 'simple':
+        x = FiLM_simple_layer()([x, gamma, beta])
+    if film_type == 'complex':
+        x = FiLM_complex_layer()([x, gamma, beta])
     x = get_activation(activation)(x)
     return x
 
@@ -55,24 +55,19 @@ def cunet_model():
         input_conditions, gammas, betas = cnn_control(
             n_conditions=config.N_CONDITIONS, n_filters=config.N_FILTERS)
 
-    if config.FILM_TYPE=='simple':
-        inputs_ = FiLM_simple_layer()([inputs, slice_tensor(0)(gammas), slice_tensor(0)(betas)])
-    elif config.FILM_TYPE=='complex':
-        inputs_ = FiLM_complex_layer()([inputs, gammas, betas])
-
-    x = inputs_
+    x = inputs
 
     # Encoder
     complex_index = 0
     for i in range(n_layers):
         n_filters = config.FILTERS_LAYER_1 * (2 ** i)
-        # if config.FILM_TYPE == 'simple':
-        #     gamma, beta = slice_tensor(i)(gammas), slice_tensor(i)(betas)
-        # if config.FILM_TYPE == 'complex':
-        #     init, end = complex_index, complex_index+n_filters
-        #     gamma = slice_tensor_range(init, end)(gammas)
-        #     beta = slice_tensor_range(init, end)(betas)
-        #     complex_index += n_filters
+        if config.FILM_TYPE == 'simple':
+            gamma, beta = slice_tensor(i)(gammas), slice_tensor(i)(betas)
+        if config.FILM_TYPE == 'complex':
+            init, end = complex_index, complex_index+n_filters
+            gamma = slice_tensor_range(init, end)(gammas)
+            beta = slice_tensor_range(init, end)(betas)
+            complex_index += n_filters
 
         x = u_net_conv_block(
             x, n_filters, initializer, gammas, betas,
@@ -97,9 +92,6 @@ def cunet_model():
         x = u_net_deconv_block(
             x, encoder_layer, n_filters, initializer, activation, dropout, skip
         ) 
-
-    if config.N_CONDITIONS==2:
-        x = FiLM_simple_layer()([x, slice_tensor(1)(gammas), slice_tensor(1)(betas)])
 
     outputs = multiply([inputs, x])
 

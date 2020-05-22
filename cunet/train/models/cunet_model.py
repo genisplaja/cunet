@@ -24,7 +24,7 @@ def u_net_conv_block(
         x = FiLM_simple_layer()([x, gamma, beta])
     if film_type == 'complex':
         x = FiLM_complex_layer()([x, gamma, beta])
-    x = get_activation(activation)(x)
+    #x = get_activation(activation)(x)
     return x
 
 def mult(args):

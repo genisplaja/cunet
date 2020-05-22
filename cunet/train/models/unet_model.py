@@ -37,7 +37,7 @@ def u_net_deconv_block(
     x = BatchNormalization(momentum=0.9, scale=True)(x)
     if dropout:
         x = Dropout(0.5)(x)
-    x = get_activation(activation)(x)
+    #x = get_activation(activation)(x)
     return x
 
 

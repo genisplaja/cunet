@@ -7,7 +7,6 @@ def FiLM_simple_layer():
         x, gamma, beta = args
         s = list(x.shape)
         s[0] = 1
-        import pdb;pdb.set_trace()
         # avoid tile with the num of batch -> it is the same for both tensors
         g = tf.tile(tf.expand_dims(tf.expand_dims(gamma, 2), 3), s)
         b = tf.tile(tf.expand_dims(tf.expand_dims(beta, 2), 3), s)

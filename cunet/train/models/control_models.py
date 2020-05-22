@@ -79,9 +79,9 @@ def cnn_control(n_conditions, n_filters):
         input_conditions, n_filters, config.Z_DIM, config.PADDING, initializer
     )
 
-    cnn_dec = cnn_block(
-        input_conditions, n_filters, config.Z_DIM, config.PADDING, initializer
-    )
+    # cnn_dec = cnn_block(
+    #     input_conditions, n_filters, config.Z_DIM, config.PADDING, initializer
+    # )
 
     gammas = Dense(
         n_conditions, input_dim=n_filters[-1], activation=config.ACT_G,

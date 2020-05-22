@@ -13,7 +13,7 @@ class config(Config):
 
     MODE = setting(default='conditioned', standard='standard')
 
-    NAME = '_satb_one_hot_f0s_360CQT_no_valid_world_f0_simple_x2_film'
+    NAME = '_satb_one_hot_f0s_360CQT_world_f0_global_2'
     ADD_TIME = False    # add the time and date in the name
     TARGET = 'vocals'   # only for standard version
 
@@ -44,7 +44,7 @@ class config(Config):
     # training
     BATCH_SIZE = 16
     N_BATCH = 2048
-    N_EPOCH = 200
+    N_EPOCH = 250
     PROGRESSIVE = True
     AUG = True
     USE_CASE = 1 # 0: max 1 singer, 1: exactly 1, 2: minimum 1
@@ -80,11 +80,11 @@ class config(Config):
 
     # cnn control
     N_FILTERS = setting(
-        [16, 64, 256], simple_cnn=[16, 32, 64], complex_cnn=[32, 64, 256]
+        [32, 64, 256], simple_cnn=[16, 32, 64], complex_cnn=[32, 64, 256]
     )
     PADDING = ['same', 'same', 'same']
     # Dense control
     N_NEURONS = setting(
-        [16, 64, 256], simple_dense=[16, 64, 256],
+        [16, 256, 1024], simple_dense=[16, 64, 256],
         complex_dense=[16, 256, 1024]
     )

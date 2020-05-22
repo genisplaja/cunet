@@ -1,5 +1,5 @@
 from tensorflow.keras.layers import (
-    Input, Conv1D, Conv2D, Dense, BatchNormalization, Dropout, Flatten
+    Input, Conv1D, Conv2D, Dense, BatchNormalization, Dropout, Flatten, Reshape, Lambda
 )
 import tensorflow as tf
 from cunet.train.config import config
@@ -17,6 +17,13 @@ def dense_block(
             x = BatchNormalization(momentum=0.9, scale=True)(x)
     return x
 
+def flatten():
+    # Crops (or slices) a Tensor
+    def func(x):
+        x = Flatten()(x)
+        x = tf.expand_dims(x,2)
+        return x
+    return Lambda(func)
 
 def dense_control(n_conditions, n_neurons):
     """
@@ -48,8 +55,7 @@ def cnn_block(
     x, n_filters, kernel_size, padding, initializer, activation='relu'
 ):
 
-    x = Flatten()(x)
-    x = tf.expand_dims(x,2)
+    x = flatten()(x)
 
     for i, (f, p) in enumerate(zip(n_filters, padding)):
         extra = i != 0
@@ -58,6 +64,8 @@ def cnn_block(
         if extra:
             x = Dropout(0.5)(x)
             x = BatchNormalization(momentum=0.9, scale=True)(x)
+
+    #x = Reshape(target_shape=[1,n_filters[-1]])(x)
     return x
 
 

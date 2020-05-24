@@ -63,7 +63,7 @@ class config(Config):
 
     # control parameters
     CONTROL_TYPE = setting(
-        'cnn', simple_dense='dense', complex_dense='dense',
+        'dense', simple_dense='dense', complex_dense='dense',
         simple_cnn='cnn', complex_cnn='cnn'
     )
     FILM_TYPE = setting(
@@ -82,7 +82,7 @@ class config(Config):
     N_FILTERS = setting(
         [16, 32, 64], simple_cnn=[16, 32, 64], complex_cnn=[32, 64, 256]
     )
-    PADDING = ['same', 'same', 'valid']
+    PADDING = ['same', 'same', 'same']
     # Dense control
     N_NEURONS = setting(
         [16, 64, 256], simple_dense=[16, 64, 256],

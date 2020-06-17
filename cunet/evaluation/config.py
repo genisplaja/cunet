@@ -8,15 +8,15 @@ class config(Config):
               'complex_cnn']
 
     GROUP = setting(
-        default='complex_cnn', simple_dense='simple_dense',
+        default='simple_cnn', simple_dense='simple_dense',
         complex_dense='complex_dense',
         simple_cnn='simple_cnn', complex_cnn='complex_cnn',
     )
     PATH_BASE = '../data/satb_dst/models'
-    NAME = '_satb_one_hot_f0s_360CQT_world_f0_global_2'
+    NAME = '_satb_one_hot_f0s_360CQT_world_f0_global_x2'
 
     PATH_MODEL = setting(
-        default=os.path.join(PATH_BASE, 'conditioned/complex_cnn'),
+        default=os.path.join(PATH_BASE, 'conditioned/simple_cnn'),
         standard=os.path.join(PATH_BASE, 'standard'),
         simple_dense=os.path.join(PATH_BASE, 'conditioned/simple_dense'),
         complex_dense=os.path.join(PATH_BASE, 'conditioned/complex_dense'),

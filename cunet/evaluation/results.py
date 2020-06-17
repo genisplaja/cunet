@@ -281,7 +281,7 @@ def main():
     files = glob(os.path.join(config.PATH_AUDIO, '*.npz'))
     if config.MODE == 'conditioned':
         results = create_pandas(files)
-        model, path_results = load_checkpoint(os.path.join(config.PATH_MODEL,config.NAME),'ckpt_191-0.00323')
+        model, path_results = load_checkpoint(os.path.join(config.PATH_MODEL,config.NAME),'ckpt_245-0.00409')
     for target in config.TARGET:
         if config.MODE == 'standard':
             i = 0

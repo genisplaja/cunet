@@ -1,9 +1,14 @@
 from tensorflow.keras.layers import (
-    Input, Conv1D, Conv2D, Dense, BatchNormalization, Dropout
+    Input, Conv1D, Conv2D, Dense, BatchNormalization, Dropout, Lambda, Concatenate
 )
 import tensorflow as tf
 from cunet.train.config import config
 
+def tileTensor(s):
+    def func(t):
+        return tf.tile(t,s)
+
+    return Lambda(func)
 
 def dense_block(
     x, n_neurons, input_dim, initializer, activation='relu'
@@ -46,7 +51,7 @@ def dense_control(n_conditions, n_neurons):
 
 # DO 2D Condition Change Here
 def cnn_block(
-    x, n_filters, kernel_size, padding, initializer, activation='relu'
+    x, n_filters, padding, initializer, activation='relu'
 ):
     
     kernel_shape = 10
@@ -76,22 +81,31 @@ def cnn_control(n_conditions, n_filters):
     initializer = tf.random_normal_initializer(stddev=0.02)
     
     cnn_enc = cnn_block(
-        input_conditions, n_filters, config.Z_DIM, config.PADDING, initializer
+        input_conditions, n_filters, config.PADDING, initializer
     )
 
-    # cnn_dec = cnn_block(
-    #     input_conditions, n_filters, config.Z_DIM, config.PADDING, initializer
-    # )
-
-    gammas = Dense(
+    gammas_enc = Dense(
         n_conditions, input_dim=n_filters[-1], activation=config.ACT_G,
         kernel_initializer=initializer
     )(cnn_enc)
 
-    betas = Dense(
+    gammas_dec = Dense(
+        n_conditions, input_dim=n_filters[-1], activation=config.ACT_G,
+        kernel_initializer=initializer
+    )(cnn_enc)
+
+    betas_enc = Dense(
         n_conditions, input_dim=n_filters[-1], activation=config.ACT_B,
         kernel_initializer=initializer
     )(cnn_enc)
+
+    betas_dec = Dense(
+        n_conditions, input_dim=n_filters[-1], activation=config.ACT_B,
+        kernel_initializer=initializer
+    )(cnn_enc)
+
+    gammas = Concatenate(axis=1)([gammas_enc, gammas_dec])
+    betas  = Concatenate(axis=1)([betas_enc, betas_dec])
 
     # both = Add()([gammas, betas])
     return input_conditions, gammas, betas

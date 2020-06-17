@@ -13,7 +13,7 @@ class config(Config):
 
     MODE = setting(default='conditioned', standard='standard')
 
-    NAME = '_satb_one_hot_f0s_360CQT_world_f0_global_2'
+    NAME = '_satb_one_hot_f0s_360CQT_world_f0_global_x2'
     ADD_TIME = False    # add the time and date in the name
     TARGET = 'vocals'   # only for standard version
 
@@ -67,7 +67,7 @@ class config(Config):
         simple_cnn='cnn', complex_cnn='cnn'
     )
     FILM_TYPE = setting(
-        'complex', simple_dense='simple', complex_dense='complex',
+        'simple', simple_dense='simple', complex_dense='complex',
         simple_cnn='simple', complex_cnn='complex'
     )
     Z_DIM = [INPUT_SHAPE[1],config_prepro.CQT_BINS+1] # f0 point for each spec frame
@@ -80,11 +80,11 @@ class config(Config):
 
     # cnn control
     N_FILTERS = setting(
-        [32, 64, 256], simple_cnn=[16, 32, 64], complex_cnn=[32, 64, 256]
+        [16, 32, 64], simple_cnn=[16, 32, 64], complex_cnn=[32, 64, 256]
     )
     PADDING = ['same', 'same', 'same']
     # Dense control
     N_NEURONS = setting(
-        [16, 256, 1024], simple_dense=[16, 64, 256],
+        [16, 64, 256], simple_dense=[16, 64, 256],
         complex_dense=[16, 256, 1024]
     )

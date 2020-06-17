@@ -6,19 +6,19 @@ class config(Config):
     groups = ['train', 'test']
     PATH_BASE = '../data/satb_dst/'
     PATH_RAW = setting(
-        default=PATH_BASE+'test_usecase1/raw_audio',
+        default=PATH_BASE+'test_usecase2/raw_audio',
         train=PATH_BASE+'train/raw_audio', test=PATH_BASE+'test_usecase2/raw_audio'
     )
     PATH_SPEC = setting(
-        default=PATH_BASE+'test_usecase1/complex',
+        default=PATH_BASE+'test_usecase2/complex',
         train=PATH_BASE+'train/complex', test=PATH_BASE+'test_usecase2/complex'
     )
     PATH_INDEXES = setting(
-        default=PATH_BASE+'test_usecase1/indexes',
+        default=PATH_BASE+'test_usecase2/indexes',
         train=PATH_BASE+'train/indexes', test=PATH_BASE+'test_usecase2/indexes'
     )
     PATH_F0S = setting(
-        default=PATH_BASE+'test_usecase1/f0s',
+        default=PATH_BASE+'test_usecase2/f0s',
         train=PATH_BASE+'train/f0s', test=PATH_BASE+'test_usecase2/f0s'
     )
     FR = 22050

@@ -23,8 +23,8 @@ class config(Config):
         simple_cnn=os.path.join(PATH_BASE, 'conditioned/simple_cnn'),
         complex_cnn=os.path.join(PATH_BASE, 'conditioned/complex_cnn')
     )
-    PATH_AUDIO = '../data/satb_dst/test_usecase1/complex'
-    PATH_AUDIO_PRED = os.path.join(PATH_MODEL.default,NAME,'pred_audio_usecase1')
+    PATH_AUDIO = '../data/satb_dst/test_usecase2/complex'
+    PATH_AUDIO_PRED = os.path.join(PATH_MODEL.default,NAME,'pred_audio_usecase2')
     TARGET = ['soprano', 'alto', 'tenor', 'bass']  # ['vocals', 'bass', 'bass_vocals'] -> not ready yet for complex conditions
     INSTRUMENTS = ['soprano', 'alto', 'tenor', 'bass']  # to check that has the same order than the training
     OVERLAP = 0

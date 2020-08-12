@@ -22,6 +22,9 @@ def dense_block(
         if extra:
             x = Dropout(0.5)(x)
             x = BatchNormalization(momentum=0.9, scale=True)(x)
+        print("Dense Block\n")
+        print(x)
+        print("\n")
     return x
 
 def dense_control(n_conditions, n_neurons):
@@ -41,17 +44,35 @@ def dense_control(n_conditions, n_neurons):
     initializer = tf.random_normal_initializer(stddev=0.02)
     dense = dense_block(flatten()(input_conditions), n_neurons, input_dim, initializer)
 
+    print("Control Block 1\n")
+    print(dense)
+    print("\n")
+
     gammas = Dense(
         n_conditions, input_dim=n_neurons[-1], activation=config.ACT_G,
         kernel_initializer=initializer
     )(dense)
+
+    print("Control Block 2\n")
+    print(gammas)
+    print("\n")
+
     betas = Dense(
         n_conditions, input_dim=n_neurons[-1], activation=config.ACT_B,
         kernel_initializer=initializer
     )(dense)
 
+    print("Control Block 3\n")
+    print(betas)
+    print("\n")
+
     betas = Reshape([1,betas.shape[1]])(betas)
     gammas = Reshape([1,gammas.shape[1]])(gammas)
+
+    print("Control Block 4\n")
+    print(gammas)
+    print(betas)
+    print("\n")
 
     # both = Add()([gammas, betas])
     return input_conditions, gammas, betas
@@ -70,6 +91,7 @@ def cnn_block(
         if extra:
             x = Dropout(0.5)(x)
             x = BatchNormalization(momentum=0.9, scale=True)(x)
+
     return x
 
 
@@ -103,8 +125,8 @@ def cnn_control(n_conditions, n_filters):
         1, input_dim=gammas.shape[2], activation=config.ACT_G,
         kernel_initializer=initializer
     )(gammas)
-    gammas = Reshape([gammas.shape[2],gammas.shape[1]])(gammas)
 
+    gammas = Reshape([gammas.shape[2],gammas.shape[1]])(gammas)
 
     betas = Dense(
         n_conditions, input_dim=n_filters[-1], activation=config.ACT_G,

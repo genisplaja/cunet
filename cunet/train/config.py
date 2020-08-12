@@ -13,7 +13,7 @@ class config(Config):
 
     MODE = setting(default='conditioned', standard='standard')
 
-    NAME = '_satb_one_hot_f0s_360CQT_no_valid_world_f0_film_encoder'
+    NAME = '_dummy'
     ADD_TIME = False    # add the time and date in the name
     TARGET = 'vocals'   # only for standard version
 

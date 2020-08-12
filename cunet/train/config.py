@@ -13,7 +13,7 @@ class config(Config):
 
     MODE = setting(default='conditioned', standard='standard')
 
-    NAME = '_satb_one_hot_original_complex'
+    NAME = '_dummy'
     ADD_TIME = False    # add the time and date in the name
     TARGET = 'vocals'   # only for standard version
 

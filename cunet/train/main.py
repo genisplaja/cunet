@@ -46,7 +46,7 @@ def main():
 
     #logger.info('Starting training for %s' % name)
 
-    # USE VAL_STEPS!! 
+    # USE VAL_STEPS!!
     
     model.fit(
         ds_train,

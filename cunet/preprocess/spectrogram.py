@@ -4,6 +4,7 @@ from cunet.preprocess.config import config
 import logging
 import os
 import librosa
+from tqdm import tqdm
 
 
 def get_config_as_str():
@@ -42,7 +43,7 @@ def spec_complex(audio_file, scaler=1):
 def spec_mag(audio_file, norm=True):
     """Compute the normalized mag spec and the phase of an audio file"""
     output = {}
-    logger = logging.getLogger('computing_spec')
+    logger = logging.getLogger('cmputing_spec')
     try:
         spec = spec_complex(audio_file)
         spec = spec['spec']
@@ -95,7 +96,7 @@ def compute_one_song(folder):
     
     # SATB
     count = 0
-    data = {i: dict() for i in config.CONDITIONS}
+    data = {'mixture': dict() for i in config.CONDITIONS}
     stem_list = glob(os.path.join(folder,"*.wav"))
 
     for i in stem_list:
@@ -110,12 +111,12 @@ def compute_one_song(folder):
         part  = filename[3] # 1,2,3,4...
 
         if config.GROUP == 'test':
-            data[group] = spec_complex(i, scaler=len(stem_list))['spec']
-        if config.GROUP == 'train':
-            data[group][part] = spec_complex(i)['spec']
+            data['mixture'] = spec_complex(i, scaler=len(stem_list))['spec']
+    #     if config.GROUP == 'train':
+    #         data[group][part] = spec_complex(i)['spec']
 
-    if config.GROUP == 'test':
-        data['mixture'] = spec_complex(stem_list, scaler=len(stem_list))['spec']
+    # if config.GROUP == 'test':
+    #     data['mixture'] = spec_complex(stem_list, scaler=len(stem_list))['spec']
 
     np.savez(
         os.path.join(config.PATH_SPEC, name+'.npz'),
@@ -131,7 +132,7 @@ def main():
     )
     logger = logging.getLogger('computing_spec')
     logger.info('Starting the computation')
-    for i in glob(os.path.join(config.PATH_RAW, '*/')):
+    for i in tqdm(glob(os.path.join(config.PATH_RAW, '*/'))):
         if os.path.isdir(i):
             compute_one_song(i)
     return

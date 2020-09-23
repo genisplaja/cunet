@@ -3,23 +3,23 @@ from effortless_config import Config, setting
 
 
 class config(Config):
-    groups = ['train', 'test']
+    groups = ['train','test']
     PATH_BASE = '../data/satb_dst/'
     PATH_RAW = setting(
-        default=PATH_BASE+'train/raw_audio',
-        train=PATH_BASE+'train/raw_audio', test=PATH_BASE+'test_usecase2/raw_audio'
+        default=PATH_BASE+'test_others/raw_audio',
+        train=PATH_BASE+'train/raw_audio', test=PATH_BASE+'test/raw_audio'
     )
     PATH_SPEC = setting(
-        default=PATH_BASE+'train/complex',
-        train=PATH_BASE+'train/complex', test=PATH_BASE+'test_usecase2/complex'
+        default=PATH_BASE+'test_others/complex',
+        train=PATH_BASE+'train/complex', test=PATH_BASE+'test/complex'
     )
     PATH_INDEXES = setting(
-        default=PATH_BASE+'train/indexes',
-        train=PATH_BASE+'train/indexes', test=PATH_BASE+'test_usecase2/indexes'
+        default=PATH_BASE+'test_others/indexes',
+        train=PATH_BASE+'train/indexes', test=PATH_BASE+'test/indexes'
     )
     PATH_F0S = setting(
-        default=PATH_BASE+'train/f0s',
-        train=PATH_BASE+'train/f0s', test=PATH_BASE+'test_usecase2/f0s'
+        default=PATH_BASE+'test_others/f0s',
+        train=PATH_BASE+'train/f0s', test=PATH_BASE+'test/f0s'
     )
     FR = 22050
     FFT_SIZE = 1024

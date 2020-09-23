@@ -159,32 +159,32 @@ def analize_spec(orig_mix_spec, model, cond):
 
 
 def do_an_exp(audio, target_source, model, file=''):
-    accompaniment = np.zeros([1])
-    for i in config.INSTRUMENTS:
-        if i not in target_source:
-            if accompaniment.size == 1:
-                accompaniment = audio[i]
-            else:
-                accompaniment = np.sum([accompaniment, audio[i]], axis=0)
+    # accompaniment = np.zeros([1])
+    # for i in config.INSTRUMENTS:
+    #     if i not in target_source:
+    #         if accompaniment.size == 1:
+    #             accompaniment = audio[i]
+    #         else:
+    #             accompaniment = np.sum([accompaniment, audio[i]], axis=0)
 
     # original isolate target
-    target = istft(audio[target_source])
+    target = [-1.0,1.0]#istft(audio[target_source])
     # original mix
     mix = istft(audio['mixture'])
     # accompaniment (sum of all apart from the original)
-    acc = istft(accompaniment)
+    #acc = istft(accompaniment)
 
     # predicted separation
     cond = np.asarray(config_train.INDEXES_TRAIN[target_source])
 
-    print('TARGET SOURCE: '+target_source)
+    # print('TARGET SOURCE: '+target_source)
     print('Condition Vector: '+str(cond))
-    print('Spec Target: '+str(np.shape(audio[target_source])))
-    print('Spec Acc: '+str(np.shape(accompaniment)))
+    # print('Spec Target: '+str(np.shape(audio[target_source])))
+    # print('Spec Acc: '+str(np.shape(accompaniment)))
     print('Spec Mixture: '+str(np.shape(audio['mixture'])))
 
-    print('Audio Target: '+str(np.shape(target)))
-    print('Audio Acc: '+str(np.shape(acc)))
+    # print('Audio Target: '+str(np.shape(target)))
+    # print('Audio Acc: '+str(np.shape(acc)))
     print('Audio Mixture: '+str(np.shape(mix)))
 
     print('Cond: '+str(np.shape(cond)))
@@ -192,18 +192,18 @@ def do_an_exp(audio, target_source, model, file=''):
     print('Pred Audio:'+str(np.shape(pred_audio)))
     print('Pred Mag:'+str(np.shape(pred_mag)))
     # to go back to the range of values of the original target
-    pred_audio = adapt_pred(pred_audio, target)
-    print('Pred Audio:'+str(np.shape(pred_audio)))
+    #pred_audio = adapt_pred(pred_audio, target)
+    #print('Pred Audio:'+str(np.shape(pred_audio)))
     # size
-    s = min(pred_audio.shape[0], target.shape[0], mix.shape[0], acc.shape[0])
-    pred_acc = mix[:s] - pred_audio[:s]
-    pred = np.array([pred_audio[:s], pred_acc])
-    orig = np.array([target[:s], acc[:s]])
-    sdr, sir, sar, perm = mir_eval.separation.bss_eval_sources(
-        reference_sources=target, estimated_sources=pred_audio,
-        compute_permutation=False)
+    #s = min(pred_audio.shape[0], target.shape[0], mix.shape[0], acc.shape[0])
+    #pred_acc = mix[:s] - pred_audio[:s]
+    #pred = np.array([pred_audio[:s], pred_acc])
+    #orig = np.array([target[:s], acc[:s]])
+    sdr, sir, sar, perm = 0,0,0,0#mir_eval.separation.bss_eval_sources(
+        #reference_sources=target, estimated_sources=pred_audio,
+        #compute_permutation=False)
     save_pred_to_path(pred_audio,str((file+'_'+target_source+'_1')))
-    return sdr[perm[0]], sir[perm[0]], sar[perm[0]]
+    return 0,0,0#sdr[perm[0]], sir[perm[0]], sar[perm[0]]
 
 
 def get_stats(dict, stat):
@@ -289,6 +289,8 @@ def main():
             print(fl)
             name = os.path.basename(os.path.normpath(fl)).replace('.npz', '')
             audio = np.load(fl, allow_pickle=True)
+            for k in audio.files:
+                print(k)
             logger.info('Song num: ' + str(i+1) + ' out of ' + str(len(results)))
             results.at[i, 'name'] = name
             results.at[i, 'target'] = target

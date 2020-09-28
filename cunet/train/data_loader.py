@@ -3,7 +3,7 @@ import numpy as np
 import os
 import tensorflow as tf
 from cunet.train.config import config
-from cunet.train.load_data_offline import (get_data, get_indexes)
+from cunet.train.load_data_offline import get_data
 from cunet.train.others.val_files import VAL_FILES
 import random
 import logging
@@ -12,11 +12,15 @@ from matplotlib import pyplot as plt
 import soundfile
 import librosa
 from cunet.preprocess.config import config as config_prepro
+from cunet.preprocess.indexes import (get_indexes,grid_to_bins)
 
-DATA_TRAIN = get_data()
-INDEXES_TRAIN = get_indexes()
-DATA_VAL = get_data(path=os.path.join(config.PATH_BASE,'valid/complex'))
-INDEXES_VAL = get_indexes(path=config.INDEXES_VAL)
+# DATA_VAL = get_data(path=os.path.join(config.PATH_BASE,'test/complex'))
+# INDEXES_VAL = get_indexes(path=config.INDEXES_VAL)
+DATA = get_data()
+freq_grid = librosa.cqt_frequencies(config_prepro.CQT_BINS,config_prepro.MIN_FREQ,config_prepro.BIN_PER_OCT)
+f_bins = grid_to_bins(freq_grid, 0.0, freq_grid[-1])
+n_freqs = len(freq_grid)
+#INDEXES_TRAIN = get_indexes()
 logger = logging.getLogger('tensorflow')
 
 
@@ -89,121 +93,39 @@ def get_name(txt):
 #     return np.abs(mixture)
 
 
-def SATBBatchGenerator(valid=False):
-
-    counter = 0
+def MUSDBBatchGenerator(valid=False):
 
     while True:
 
-        sources = ['soprano','tenor','bass','alto']
+        sources = ['vocals','drums','bass','other']
         out_shapes = {'mixture':np.zeros((config.BATCH_SIZE,config.INPUT_SHAPE[0],config.INPUT_SHAPE[1],1)), 
                       'target':np.zeros((config.BATCH_SIZE,config.INPUT_SHAPE[0],config.INPUT_SHAPE[1],1)), 
                       'conditions':np.zeros((config.BATCH_SIZE,config.Z_DIM[0],config.Z_DIM[1]))}
 
         # Get rand song
         if not valid:
-            DATA = DATA_TRAIN
-            INDEXES = INDEXES_TRAIN
+            randsong = random.choice([i for i in DATA.keys() if i not in VAL_FILES])
         else:
-            DATA = DATA_VAL
-            INDEXES = INDEXES_VAL
+            randsong = random.choice([i for i in DATA.keys() if i in VAL_FILES])
 
-        randsong = random.choice([i for i in DATA.keys()])
+        indexes = get_indexes(randsong,freq_grid,f_bins,n_freqs)
 
-        # Get all available part from chosen song
-        part_count = DATA[randsong]
+        # Get index
 
         for i in range(config.BATCH_SIZE):
 
-            # Use-Case: At most one singer per part
-            if (config.USE_CASE==0):
-                max_num_singer_per_part = 1
-                randsources = random.sample(sources, random.randint(1,len(sources)))                   # Randomize source pick if at most one singer per part
-            # Use-Case: Exactly one singer per part
-            elif (config.USE_CASE==1):
-                max_num_singer_per_part = 1
-                randsources = sources                                                                  # Take all sources + Set num singer = 1
-            # Use-Case: At least one singer per part
-            else:
-                max_num_singer_per_part = 4
-                randsources = sources                                                                  # Take all sources + Set max num of singer = 4 
+            randsource = random.choice(sources)   
 
             start_frame = 0
             end_frame   = 0
 
             # Get Start and End samples. Pick random part to calculate start/end spl
-            while start_frame == 0:
-                try:
-                    randpart = random.choice(sources)
-                    start_frame = random.randint(0,DATA[randsong][randpart]['1'].shape[1]-config.INPUT_SHAPE[1]) # This assume that all stems are the same length
-                except Exception as e: 
-                    print(e)
-                    pass
-
+            start_frame = random.randint(0,DATA[randsong][randsource].shape[1]-config.INPUT_SHAPE[1]) # This assume that all stems are the same length
             end_frame   = start_frame+config.INPUT_SHAPE[1]
 
-            # Get Random Sources: 
-            randsources_for_song = [] 
-            for source in randsources:
-                # If no singer in part, default it to one and fill array with zeros later
-                singers_for_part = len(DATA[randsong][randpart].keys())
-                if singers_for_part>0:
-                    max_for_part = singers_for_part if singers_for_part < max_num_singer_per_part else max_num_singer_per_part
-                else:
-                    max_for_part = 1 
-
-                num_singer_per_part = random.randint(1,max_for_part)                      # Get random number of singer per part based on max_for_part
-                singer_num = random.sample(range(1,max_for_part+1),num_singer_per_part)   # Get random part number for the number of singer based off max_for_part
-                randsources_for_part = np.repeat(source,num_singer_per_part)              # Repeat the parts according to the number of singer per group
-                randsources_for_part = ["{}{}".format(a_, b_) for a_, b_ in zip(randsources_for_part, singer_num)] # Concatenate strings for part name
-                randsources_for_song+=randsources_for_part
-
-            # Retrieve the chunks and store them in output shapes 
-            zero_source_counter = 0                                        
-            for source in randsources_for_song:
-
-                # Try to retrieve chunk. If part doesn't exist, create array of zeros instead
-                try:
-                    source_chunk = np.abs(DATA[randsong][source[:-1]][source[-1]][:,start_frame:end_frame]) # Retrieve part's chunk
-                except:
-                    zero_source_counter += 1
-                    source_chunk = np.zeros(config.INPUT_SHAPE)
-
-                out_shapes['mixture'][i] = np.add(out_shapes['mixture'][i],check_shape(source_chunk)) # Add the chunk to the mix
-            
-            # Scale down all the group chunks based off number of sources per group
-            scaler = len(randsources_for_song) - zero_source_counter
-            out_shapes['mixture'][i] = out_shapes['mixture'][i] / scaler
-
-            # Take random source as target
-            got_target = False
-            while got_target == False:
-                try:
-                    target = random.choice(randsources_for_song)
-                    out_shapes['conditions'][i] = INDEXES[randsong][target[:-1]][target[-1]][start_frame:end_frame,:]
-                    out_shapes['target'][i] = check_shape(np.abs(DATA[randsong][target[:-1]][target[-1]][:,start_frame:end_frame])) / scaler
-                    got_target = True
-                except Exception as e: 
-                    print(e)
-                    pass
-            
-            #if (counter % 16) == 0:
-                # rand = random.randint(1,1000)
-                # soundfile.write(
-                #     os.path.join('./debug_fig','spec'+'_mixture_'+str(rand)+'.wav'), 
-                #     istft(out_shapes['mixture'][i]), 
-                #     config_prepro.FR, 'PCM_24'
-                # )
-                # soundfile.write(
-                #     os.path.join('./debug_fig','spec'+'_target_'+str(rand)+'.wav'), 
-                #     istft(out_shapes['target'][i]), 
-                #     config_prepro.FR, 'PCM_24'
-                # )
-                # print('F0s Shape: '+str(np.shape(out_shapes['conditions'][i])))
-                # print('F0s: '+str(np.where(out_shapes['conditions'][i]>0)))
-
-                # print('Target Shape: '+str(np.shape(out_shapes['target'][i])))
-                # print('Mixture Shape: '+str(np.shape(out_shapes['mixture'][i])))
+            out_shapes['mixture'][i] = check_shape(np.abs(DATA[randsong]['mixture'][:,start_frame:end_frame]))
+            out_shapes['conditions'][i] = indexes[randsource][start_frame:end_frame,:]
+            out_shapes['target'][i] = check_shape(np.abs(DATA[randsong][randsource][:,start_frame:end_frame]))
 
         yield out_shapes
 
@@ -223,7 +145,7 @@ def dataset_generator(val_set=False):
                 'conditions':(config.BATCH_SIZE,config.Z_DIM[0],config.Z_DIM[1])}
 
     ds = tf.data.Dataset.from_generator(
-        SATBBatchGenerator,
+        MUSDBBatchGenerator,
         output_types={'mixture': tf.float32, 'target': tf.float32, 'conditions': tf.float32},
         output_shapes=out_shapes,
         args=[val_set]

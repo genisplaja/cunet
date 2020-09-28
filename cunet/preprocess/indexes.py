@@ -99,67 +99,18 @@ def chunks(l, chunk_size):
 
 
 # Get the time stamps from the specs. for F0s
-def get_indexes():
+def get_indexes(songname,freq_grid,f_bins,n_freqs):
 
-	logger = logging.getLogger('getting_indexes')
-	logger.info('Computing the indexes')
-	indexes = {'config': {'FR': config.FR, 'FFT_SIZE': config.FFT_SIZE, 'HOP': config.HOP}}
+	# Get all the f0s files
+	f0_file  = pd.read_csv(os.path.join(config.PATH_F0S, songname+'.csv'))
 
-	try:
+	indexes = dict()
 
-		# Get all the spec_files. from NPZ (for each songs SONG[GROUP][NUMBER])
-		spec_files = glob(os.path.join(config.PATH_SPEC, '*.npz'))
+	# Iterate through all groups (vox, bass, drums, others)
+	for part in f0_file.columns:
+		atb = process_f0(f0_file[part], f_bins, n_freqs, part)
+		indexes[part] = atb
 
-		# Get all the f0s files
-		f0s_files  = glob(os.path.join(config.PATH_F0S, '*.csv'),recursive=False)
-
-		# Iterate through all previously computed specs. 
-		for f in tqdm(np.random.choice(spec_files, len(spec_files), replace=False)):
-
-			logger.info('Input points for track %s' % f)
-
-			# SATB
-			spec = np.load(f,allow_pickle=True)
-			song_name = os.path.basename(os.path.normpath(f)).replace('.npz', '') # stem name saved along indexes
-			part_names = spec.files
-			indexes[name] = dict()
-
-			# Iterate through all groups (vox, bass, drums, others)
-			for part in part_names:
-
-				indexes[name][part] = dict()
-
-				file_length = spec[part].shape[1]
-				f0_filename = str(name+'_'+part)
-
-				indexes[name][part] = None
-
-				# Retrieve F0s file for current spec
-				f0_file = [s for s in f0s_files if f0_filename in s]
-				f0_data = pd.read_csv(f0_file[0],names=["frame", "f0"]) 
-				f0_frame = f0_data['f0']
-				f0_resampled = signal.resample(f0_frame,file_length)
-				f0_resampled = f0_resampled.clip(0)
-				# One-hot encode F0 track
-				freq_grid = librosa.cqt_frequencies(config.CQT_BINS,config.MIN_FREQ,config.BIN_PER_OCT)
-				f_bins = grid_to_bins(freq_grid, 0.0, freq_grid[-1])
-				n_freqs = len(freq_grid)
-
-				atb = process_f0(f0_resampled, f_bins, n_freqs, part_name)
-
-				plot_and_save(f0_frame,os.path.join(F0_DEBUG_TRAIN,part_name),'original.png')
-				plot_and_save(f0_resampled,os.path.join(F0_DEBUG_TRAIN,part_name),'resampled.png')
-				plot_and_save(np.argmax(atb,axis=1),os.path.join(F0_DEBUG_TRAIN,part_name),'argmax.png')
-				# for j in np.arange(0, file_length, config.STEP): # iterate over all spec frames
-
-				# 	s.append([j, atb[j,:]])
-
-				# s = np.asarray(atb, dtype=float)
-				logger.info('indexes computed for group %s with shape %s' % (part,str(np.shape(atb))))
-				indexes[name][part] = atb
-
-	except Exception as error:
-		logger.error(error)
 	return indexes
 
 

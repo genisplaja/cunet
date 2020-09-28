@@ -13,24 +13,24 @@ class config(Config):
 
     MODE = setting(default='conditioned', standard='standard')
 
-    NAME = '_dummy'
+    NAME = '_musdb_domain_specific'
     ADD_TIME = False    # add the time and date in the name
     TARGET = 'vocals'   # only for standard version
 
     # GENERATOR
-    PATH_BASE = '../data/satb_dst/'
+    PATH_BASE = '../data/musdb/'
     # default = conditioned
     INDEXES_TRAIN = setting(
         default=os.path.join(
-            PATH_BASE, 'train/indexes/indexes_SATB_F0s.npz'),
+            PATH_BASE, 'train/indexes/indexes_MUSDB_F0s.npz'),
         standard=os.path.join(
-            PATH_BASE, 'train/indexes/indexes_SATB_F0s.npz')
+            PATH_BASE, 'train/indexes/indexes_MUSDB_F0s.npz')
     )
     INDEXES_VAL = setting(
         default=os.path.join(
-            PATH_BASE, 'valid/indexes/indexes_SATB_F0s.npz'),
+            PATH_BASE, 'test/indexes/indexes_MUSDB_F0s.npz'),
         standard=os.path.join(
-            PATH_BASE, 'valid/indexes/indexes_SATB_F0s.npz')
+            PATH_BASE, 'test/indexes/indexes_MUSDB_F0s.npz')
     )
 
     NUM_THREADS = 32#tf.data.experimental.AUTOTUNE   # 32

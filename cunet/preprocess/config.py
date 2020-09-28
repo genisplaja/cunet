@@ -4,36 +4,36 @@ from effortless_config import Config, setting
 
 class config(Config):
     groups = ['train', 'test']
-    PATH_BASE = '../data/satb_dst/'
+    PATH_BASE = '../data/musdb/'
     PATH_RAW = setting(
         default=PATH_BASE+'train/raw_audio',
-        train=PATH_BASE+'train/raw_audio', test=PATH_BASE+'test_usecase2/raw_audio'
+        train=PATH_BASE+'test/raw_audio', test=PATH_BASE+'test/raw_audio'
     )
     PATH_SPEC = setting(
         default=PATH_BASE+'train/complex',
-        train=PATH_BASE+'train/complex', test=PATH_BASE+'test_usecase2/complex'
+        train=PATH_BASE+'train/complex', test=PATH_BASE+'test/complex'
     )
     PATH_INDEXES = setting(
         default=PATH_BASE+'train/indexes',
-        train=PATH_BASE+'train/indexes', test=PATH_BASE+'test_usecase2/indexes'
+        train=PATH_BASE+'train/indexes', test=PATH_BASE+'test/indexes'
     )
     PATH_F0S = setting(
-        default=PATH_BASE+'train/f0s',
-        train=PATH_BASE+'train/f0s', test=PATH_BASE+'test_usecase2/f0s'
+        default=PATH_BASE+'train/f0s_resampled',
+        train=PATH_BASE+'train/f0s', test=PATH_BASE+'test/f0s'
     )
     FR = 22050
     FFT_SIZE = 1024
     HOP = 256
     MODE = 'conditioned'
-    GROUP = 'test' # mainly used for spectrogram pre-processing: need to compute the mixture as well
+    GROUP = 'train' # mainly used for spectrogram pre-processing: need to compute the mixture as well
 
     CQT_BINS = 360
     MIN_FREQ = 32.7
     BIN_PER_OCT = 60
 
     # SATB
-    INTRUMENTS = ['soprano', 'alto', 'tenor', 'bass']
-    CONDITIONS = ['soprano', 'alto', 'tenor', 'bass']
+    INTRUMENTS = ['vocals','drums','bass','other']
+    CONDITIONS = ['vocals','drums','bass','other']
     
     CONDITION_MIX = 1       # complex conditions -> 1 only original instrumets, 2 combination of 2 instruments, etc
     ADD_ZERO = True         # add the zero condition

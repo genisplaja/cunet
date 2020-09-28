@@ -27,6 +27,10 @@ def complex_min(d):
 
 
 def normlize_complex(data, c_max=1):
+    """ Each source preserve its range of values i.e.
+    if the max of source_1 is .89 the max in the mixture, after the normalizaiton
+    it is still .89, not 1
+    """
     if c_max != 1:
         factor = np.divide(complex_max(data), c_max)
     else:
@@ -38,14 +42,9 @@ def normlize_complex(data, c_max=1):
 
 
 def get_max_complex(data, keys):
-
-    for key in keys:
-        pos = np.argmax([np.abs(complex_max(data[key].item()[str(i)])) for i in data[key].item()])
-
-    for key in keys:
-        max_comp = np.array([complex_max(data[key].item()[str(i)]) for i in data[key].item()])[pos]
-
-    return max_comp
+    # sometimes the max is not the mixture
+    pos = np.argmax([np.abs(complex_max(data[i])) for i in keys])
+    return np.array([complex_max(data[i]) for i in keys])[pos]
 
 
 def load_a_file(fl):
@@ -57,9 +56,7 @@ def load_a_file(fl):
     c_max = get_max_complex(data_tmp, sources)
 
     for value in sources:
-        data[value] = {}
-        for i in data_tmp[value].item():
-            data[value][i] = normlize_complex(data_tmp[value].item()[str(i)], c_max)
+        data[value] = normlize_complex(data_tmp[value], c_max)
     return (get_name(fl), data)
 
 
@@ -88,8 +85,5 @@ def get_indexes(path=config.INDEXES_TRAIN):
         indexes[song] = {}
         if not song == 'config':
             for part in data_tmp[song].item():
-                indexes[song][part] = {}
-                for part_num in data_tmp[song].item()[part].keys():
-                    f0 = data_tmp[song].item()[part][part_num]
-                    indexes[song][part][part_num] = f0
+                indexes[song][part] = data_tmp[song].item()[part]
     return indexes

@@ -47,7 +47,7 @@ class config(Config):
     N_EPOCH = 1000
     PROGRESSIVE = True
     AUG = True
-    USE_CASE = 1 # 0: max 1 singer, 1: exactly 1, 2: minimum 1
+    USE_CASE = 0  # 0: max 1 singer, 1: exactly 1, 2: minimum 1
 
     # unet paramters
     INPUT_SHAPE = [512, 128, 1]  # freq = 512, time = 128
@@ -70,7 +70,7 @@ class config(Config):
         'simple', simple_dense='simple', complex_dense='complex',
         simple_cnn='simple', complex_cnn='complex'
     )
-    Z_DIM = INPUT_SHAPE[1] # f0 point for each spec frame
+    Z_DIM = INPUT_SHAPE[1]  # f0 point for each spec frame
     ACT_G = 'linear'
     ACT_B = 'linear'
     N_CONDITIONS = setting(

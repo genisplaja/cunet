@@ -13,25 +13,14 @@ def get_config_as_str():
     }
 
 
-def spec_complex(audio_file, scaler=1):
+def spec_complex(audio_file):
     """Compute the complex spectrum"""
     output = {'type': 'complex'}
     logger = logging.getLogger('computing_spec')
     try:
         audio = np.zeros([1])
-        if isinstance(audio_file, str):
-            logger.info('Computing complex spec for %s' % audio_file)
-            audio, fe = librosa.load(audio_file, sr=config.FR)
-        else:
-            logger.info('Computing complex spec for mixture')
-            for file in audio_file:
-                y = librosa.load(file, sr=config.FR)[0]
-                if audio.size == 1:
-                    audio = y
-                else:
-                    audio = np.sum([audio, y], axis=0)
-
-        audio /= scaler
+        logger.info('Computing complex spec for %s' % audio_file)
+        audio, fe = librosa.load(audio_file, sr=config.FR)
         output['spec'] = librosa.stft(
             audio, n_fft=config.FFT_SIZE, hop_length=config.HOP)
     except Exception as my_error:
@@ -94,28 +83,34 @@ def compute_one_song(folder):
     # data = {i: spec_complex(folder+i+'.wav')['spec'] for i in config.INTRUMENTS}
     
     # SATB
+    # count = 0
+    # data = {i: dict() for i in config.CONDITIONS}
+    # stem_list = glob(os.path.join(folder, "*.wav"))
+
+    # SSSS
     count = 0
     data = {i: dict() for i in config.CONDITIONS}
-    stem_list = glob(os.path.join(folder,"*.wav"))
+    stem_list = list(glob(os.path.join(folder, "*mix.wav")))
 
     for i in stem_list:
-
         count += 1
-
-        filename = os.path.splitext(os.path.basename(i))[0].split('_')
+        filename = i.split('/')[-1]
+        folder_name = i.split('/')[-2]
         print('processing '+str(count)+' of '+str(len(stem_list))+' files')
 
-        song  = filename[1] # ND, LI, etc.
-        group = filename[2] # soprano, etc.
-        part  = filename[3] # 1,2,3,4...
+        song = folder_name
+        group = filename.split('_')[-1].replace('.wav', '')
+        part = filename.split('_')[-2]
 
         if config.GROUP == 'test':
-            data[group] = spec_complex(i, scaler=len(stem_list))['spec']
+            data[group] = spec_complex(i)['spec']
+            #data[group] = spec_complex(mix_stem)['spec']
         if config.GROUP == 'train':
-            data[group][part] = spec_complex(i)['spec']
+            data['vocals'][part] = spec_complex(i)['spec']
+            data['mixture'][part] = spec_complex(i.replace('mix', 'vocals'))['spec']
 
     if config.GROUP == 'test':
-        data['mixture'] = spec_complex(stem_list, scaler=len(stem_list))['spec']
+        data['mixture'] = spec_complex(stem_list)['spec']
 
     np.savez(
         os.path.join(config.PATH_SPEC, name+'.npz'),

@@ -100,9 +100,11 @@ def get_indexes():
 
 		# Get all the f0s files
 		f0s_files  = glob(os.path.join(config.PATH_F0S, '*.csv'),recursive=False)
+		print(f0s_files)
 
 		# Iterate through all previously computed specs. 
 		for f in tqdm(np.random.choice(spec_files, len(spec_files), replace=False)):
+			print(f)
 
 			logger.info('Input points for track %s' % f)
 
@@ -113,13 +115,16 @@ def get_indexes():
 
 			# Iterate through all groups
 			for s_group in spec.files:
+				print('s_group', s_group)
 
 				if not any(x in s_group for x in ['config','mixture']):
+					print('hola')
 
 					indexes[name][s_group] = dict()
 
 					# Iterate through all parts
 					for i in spec[s_group].item().keys():
+						print('adeu')
 						s = []
 
 						indexes[name][s_group][str(i)] = None
@@ -160,7 +165,7 @@ def main():
 	logger = logging.getLogger('getting_indexes')
 	logger.info('Starting the computation')
 	conditions = []
-	name = "_".join(['indexes','SATB','F0s'])
+	name = "_".join(['indexes','SSSS','F0s'])
 	data = get_indexes()
 	logger.info('Saving')
 	np.savez(

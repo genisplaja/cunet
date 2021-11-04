@@ -4,7 +4,7 @@ from effortless_config import Config, setting
 
 class config(Config):
     groups = ['train', 'test']
-    PATH_BASE = '../data/satb_dst/'
+    PATH_BASE = '/mnt/md1/genis/Saraga-SS-Synth/'
     PATH_RAW = setting(
         default=PATH_BASE+'train/raw_audio',
         train=PATH_BASE+'train/raw_audio', test=PATH_BASE+'test/raw_audio'
@@ -25,15 +25,16 @@ class config(Config):
     FFT_SIZE = 1024
     HOP = 256
     MODE = 'conditioned'
-    GROUP = 'train' # mainly used for spectrogram pre-processing: need to compute the mixture as well
+    GROUP = 'train'  # mainly used for spectrogram pre-processing: need to compute the mixture as well
 
     CQT_BINS = 360
     MIN_FREQ = 32.7
     BIN_PER_OCT = 60
 
     # SATB
-    INTRUMENTS = ['soprano', 'alto', 'tenor', 'bass']
-    CONDITIONS = ['soprano', 'alto', 'tenor', 'bass']
+    DATA_INSTRUMENTS = ['vocals', 'rest', 'mix']
+    INTRUMENTS = ['vocals', 'rest']
+    CONDITIONS = ['vocals']
     
     CONDITION_MIX = 1       # complex conditions -> 1 only original instrumets, 2 combination of 2 instruments, etc
     ADD_ZERO = True         # add the zero condition

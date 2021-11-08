@@ -80,36 +80,25 @@ def get_name(txt):
 #     return np.abs(mixture)
 
 
-def SATBBatchGenerator(valid=False):
-
+def SSSSBatchGenerator(valid=False):
     while True:
 
-        sources = ['soprano','tenor','bass','alto']
         out_shapes = {'mixture':np.zeros(config.INPUT_SHAPE), 
                       'target':np.zeros(config.INPUT_SHAPE), 
-                      'conditions':np.zeros([config.Z_DIM,2])}
+                      'conditions':np.zeros([config.Z_DIM, 2])}
 
         # Get rand song
         if not valid:
             randsong = random.choice([i for i in DATA.keys() if i is not VAL_FILES])
+            vocal_data = DATA[randsong]['vocals']
+            mixture_data = DATA[randsong]['mixture']
         else:
             randsong = random.choice(VAL_FILES)
+            vocal_data = DATA[randsong]['vocals']
+            mixture_data = DATA[randsong]['mixture']
 
-        # Get all available part from chosen song
-        part_count = DATA[randsong]
-
-        # Use-Case: At most one singer per part
-        if (config.USE_CASE==0):
-            max_num_singer_per_part = 1
-            randsources = random.sample(sources, random.randint(1,len(sources)))                   # Randomize source pick if at most one singer per part
-        # Use-Case: Exactly one singer per part
-        elif (config.USE_CASE==1):
-            max_num_singer_per_part = 1
-            randsources = sources                                                                  # Take all sources + Set num singer = 1
-        # Use-Case: At least one singer per part
-        else:
-            max_num_singer_per_part = 4
-            randsources = sources                                                                  # Take all sources + Set max num of singer = 4 
+        parts = list(vocal_data.keys())
+        actual_part = random.choice(parts)
 
         start_frame = 0
         end_frame   = 0
@@ -117,59 +106,33 @@ def SATBBatchGenerator(valid=False):
         # Get Start and End samples. Pick random part to calculate start/end spl
         while start_frame == 0:
             try:
-                randpart = random.choice(sources)
-                start_frame = random.randint(0,DATA[randsong][randpart]['1'].shape[1]-config.INPUT_SHAPE[1]) # This assume that all stems are the same length
+                start_frame = random.randint(0, vocal_data[actual_part].shape[1]-config.INPUT_SHAPE[1]) # This assume that all stems are the same length
             except Exception as e: 
-                print(e)
+                print('Exception:', e)
                 pass
 
         end_frame   = start_frame+config.INPUT_SHAPE[1]
+        print(start_frame, end_frame)
 
-        # Get Random Sources: 
-        randsources_for_song = [] 
-        for source in randsources:
-            # If no singer in part, default it to one and fill array with zeros later
-            singers_for_part = len(DATA[randsong][randpart].keys())
-            if singers_for_part>0:
-                max_for_part = singers_for_part if singers_for_part < max_num_singer_per_part else max_num_singer_per_part
-            else:
-                max_for_part = 1 
-
-            num_singer_per_part = random.randint(1,max_for_part)                      # Get random number of singer per part based on max_for_part
-            singer_num = random.sample(range(1,max_for_part+1),num_singer_per_part)   # Get random part number for the number of singer based off max_for_part
-            randsources_for_part = np.repeat(source,num_singer_per_part)              # Repeat the parts according to the number of singer per group
-            randsources_for_part = ["{}{}".format(a_, b_) for a_, b_ in zip(randsources_for_part, singer_num)] # Concatenate strings for part name
-            randsources_for_song+=randsources_for_part
-
-        # Retrieve the chunks and store them in output shapes 
-        zero_source_counter = 0                                        
-        for source in randsources_for_song:
-
-            # Try to retrieve chunk. If part doesn't exist, create array of zeros instead
-            try:
-                source_chunk = DATA[randsong][source[:-1]][source[-1]][:,start_frame:end_frame] # Retrieve part's chunk
-            except:
-                zero_source_counter += 1
-                source_chunk = np.zeros(config.INPUT_SHAPE)
-
-            out_shapes['mixture'] = np.add(out_shapes['mixture'],check_shape(source_chunk)) # Add the chunk to the mix
-        
         # Scale down all the group chunks based off number of sources per group
-        scaler = len(randsources_for_song) - zero_source_counter
-        out_shapes['mixture'] /= scaler
+        out_shapes['mixture'] = check_shape(mixture_data[actual_part][:,start_frame:end_frame])
 
-        # Take random source as target
+        # Take vocal source as target
         got_target = False
         while got_target == False:
             try:
-                target = random.choice(randsources_for_song)
-                out_shapes['conditions'] = np.load(config.INDEXES_TRAIN, allow_pickle=True)[randsong].item()[target[:-1]][target[-1]][start_frame:end_frame,:]
+                target = 'vocals'
+                out_shapes['conditions'] = np.load(config.INDEXES_TRAIN, allow_pickle=True)[randsong].item()['vocals'][actual_part][start_frame:end_frame,:]
                 #out_shapes['conditions'] = np.argmax(onehot_f0s,axis=1)
-                out_shapes['target'] = check_shape(DATA[randsong][target[:-1]][target[-1]][:,start_frame:end_frame]) / scaler
+                out_shapes['target'] = check_shape(vocal_data[actual_part][:,start_frame:end_frame])
                 got_target = True
             except Exception as e: 
-                print(e)
+                print('Exception:', e)
                 pass
+
+        print(np.shape(out_shapes['mixture']))
+        print(np.shape(out_shapes['conditions']))   
+        print(np.shape(out_shapes['target']))
 
         yield out_shapes
 
@@ -192,7 +155,7 @@ def convert_to_estimator_input(d):
 
 def dataset_generator(val_set=False):
     ds = tf.data.Dataset.from_generator(
-        SATBBatchGenerator,
+        SSSSBatchGenerator,
         {'mixture': tf.complex64, 'target': tf.complex64, 'conditions': tf.float32},
         args=[val_set]
     ).map(

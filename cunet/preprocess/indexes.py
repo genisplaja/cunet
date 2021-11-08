@@ -1,3 +1,4 @@
+from posixpath import join
 import numpy as np
 import copy
 import itertools
@@ -103,39 +104,40 @@ def get_indexes():
 		print(f0s_files)
 
 		# Iterate through all previously computed specs. 
-		for f in tqdm(np.random.choice(spec_files, len(spec_files), replace=False)):
+		for f in tqdm(spec_files):
 			print(f)
 
 			logger.info('Input points for track %s' % f)
 
-			# SATB
+			# SSSS
 			spec = np.load(f,allow_pickle=True)
-			name = os.path.basename(os.path.normpath(f)).replace('.npz', '') # stem name saved along indexes
+			name = f.split('/')[-1].replace('.npz', '') # stem name saved along indexes
 			indexes[name] = dict()
 
 			# Iterate through all groups
 			for s_group in spec.files:
-				print('s_group', s_group)
-
 				if not any(x in s_group for x in ['config','mixture']):
-					print('hola')
+					print(s_group, 'must be vocals')
 
 					indexes[name][s_group] = dict()
 
 					# Iterate through all parts
 					for i in spec[s_group].item().keys():
-						print('adeu')
 						s = []
 
 						indexes[name][s_group][str(i)] = None
-						# Get the number of frames for current spec.
+						# Get the number of frames for current spec.s
 						file_length = spec[s_group].item()[str(i)].shape[1]
 						# Retrieve F0s file for current spec
-						part_name = str(name+'_'+s_group+'_'+i)
-						f0_file = [s for s in f0s_files if part_name in s]
-						f0_data = pd.read_csv(f0_file[0],names=["frame", "f0"]) 
+						#part_name = str(name+'_'+s_group+'_'+i+'.csv')
+						#f0_file = [s for s in f0s_files if part_name in s]
+						f0_file = os.path.join(config.PATH_F0S, name + '_' + i +'.csv')
+						print(name)
+						print(i)
+						print(f0_file)
+						f0_data = pd.read_csv(f0_file, names=["frame", "f0"]) 
 						f0_frame = f0_data['f0']
-						f0_resampled = signal.resample(f0_frame,file_length)
+						f0_resampled = signal.resample(f0_frame, file_length)
 
 						# One-hot encode F0 track
 						freq_grid = librosa.cqt_frequencies(config.CQT_BINS,config.MIN_FREQ,config.BIN_PER_OCT)
@@ -165,7 +167,7 @@ def main():
 	logger = logging.getLogger('getting_indexes')
 	logger.info('Starting the computation')
 	conditions = []
-	name = "_".join(['indexes','SSSS','F0s'])
+	name = "_".join(['indexes','SSSS','f0s'])
 	data = get_indexes()
 	logger.info('Saving')
 	np.savez(

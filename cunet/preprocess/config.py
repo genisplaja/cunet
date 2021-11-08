@@ -32,8 +32,7 @@ class config(Config):
     BIN_PER_OCT = 60
 
     # SATB
-    DATA_INSTRUMENTS = ['vocals', 'rest', 'mix']
-    INTRUMENTS = ['vocals', 'rest']
+    INSTRUMENTS = ['vocals', 'mixture']
     CONDITIONS = ['vocals']
     
     CONDITION_MIX = 1       # complex conditions -> 1 only original instrumets, 2 combination of 2 instruments, etc

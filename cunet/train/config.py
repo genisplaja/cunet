@@ -13,16 +13,16 @@ class config(Config):
 
     MODE = setting(default='conditioned', standard='standard')
 
-    NAME = 'satb_one_hot_f0s'
+    NAME = 'ssss_one_hot_f0s'
     ADD_TIME = False    # add the time and date in the name
     TARGET = 'vocals'   # only for standard version
 
     # GENERATOR
-    PATH_BASE = '../data/satb_dst/'
+    PATH_BASE = '/mnt/md1/genis/Saraga-SS-Synth'
     # default = conditioned
     INDEXES_TRAIN = setting(
         default=os.path.join(
-            PATH_BASE, 'train/indexes/indexes_SATB_F0s.npz'),
+            PATH_BASE, 'train/indexes/indexes_SSSS_f0s.npz'),
         standard=os.path.join(
             PATH_BASE, 'train/indexes/indexes_standard_1_4.npz')
     )

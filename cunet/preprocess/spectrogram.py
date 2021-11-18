@@ -1,5 +1,6 @@
 import numpy as np
 from glob import glob
+from tqdm import tqdm
 from cunet.preprocess.config import config
 import logging
 import os
@@ -74,7 +75,8 @@ def spec_mag_log(audio_file):
 
 def compute_one_song(folder):
     logger = logging.getLogger('computing_spec')
-    name = os.path.basename(os.path.normpath(folder)).replace(' ', '_')
+    name = folder.split('/')[-2].replace('.wav', '')
+
     logger.info('Computing spec for %s' % name)
 
     # # MUSDB
@@ -89,34 +91,39 @@ def compute_one_song(folder):
 
     # SSSS
     count = 0
-    data = {i: dict() for i in config.CONDITIONS}
+    data = {i: dict() for i in config.INSTRUMENTS}
     stem_list = list(glob(os.path.join(folder, "*mix.wav")))
+    if stem_list:
+        for i in stem_list:
+            count += 1
+            filename = i.split('/')[-1]
+            folder_name = i.split('/')[-2]
+            print('processing '+str(count)+' of '+str(len(stem_list))+' files')
 
-    for i in stem_list:
-        count += 1
-        filename = i.split('/')[-1]
-        folder_name = i.split('/')[-2]
-        print('processing '+str(count)+' of '+str(len(stem_list))+' files')
+            song = folder_name
+            group = filename.split('_')[-1].replace('.wav', '')
+            part = filename.split('_')[-2]
 
-        song = folder_name
-        group = filename.split('_')[-1].replace('.wav', '')
-        part = filename.split('_')[-2]
+            if config.GROUP == 'test':
+                data[group] = spec_complex(i)['spec']
+                #data[group] = spec_complex(mix_stem)['spec']
+            if config.GROUP == 'train':
+                data['vocals'][part] = spec_complex(i)['spec']
+                data['mixture'][part] = spec_complex(i.replace('mix', 'vocals'))['spec']
 
         if config.GROUP == 'test':
-            data[group] = spec_complex(i)['spec']
-            #data[group] = spec_complex(mix_stem)['spec']
-        if config.GROUP == 'train':
-            data['vocals'][part] = spec_complex(i)['spec']
-            data['mixture'][part] = spec_complex(i.replace('mix', 'vocals'))['spec']
+            data['mixture'] = spec_complex(stem_list)['spec']
 
-    if config.GROUP == 'test':
-        data['mixture'] = spec_complex(stem_list)['spec']
-
-    np.savez(
-        os.path.join(config.PATH_SPEC, name+'.npz'),
-        config=get_config_as_str(), **data
-    )
-    return
+        print('Saving data...')
+        print(os.path.join(config.PATH_SPEC, name+'.npz'))
+        np.savez(
+            os.path.join(config.PATH_SPEC, name+'.npz'),
+            config=get_config_as_str(), **data
+        )
+        return
+    else:
+        print('Empty folder!!')
+        return
 
 
 def main():
@@ -126,7 +133,8 @@ def main():
     )
     logger = logging.getLogger('computing_spec')
     logger.info('Starting the computation')
-    for i in glob(os.path.join(config.PATH_RAW, '*/')):
+    for i in tqdm(glob(os.path.join(config.PATH_RAW, '*/'))):
+        print(i)
         if os.path.isdir(i):
             compute_one_song(i)
     return

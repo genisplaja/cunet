@@ -13,41 +13,41 @@ class config(Config):
 
     MODE = setting(default='conditioned', standard='standard')
 
-    NAME = 'satb_one_hot_f0s'
+    NAME = 'ssss_one_hot_f0s'
     ADD_TIME = False    # add the time and date in the name
     TARGET = 'vocals'   # only for standard version
 
     # GENERATOR
-    PATH_BASE = '../data/satb_dst/'
+    PATH_BASE = '/mnt/md1/genis/Saraga-SS-Synth'
     # default = conditioned
     INDEXES_TRAIN = setting(
         default=os.path.join(
-            PATH_BASE, 'train/indexes/indexes_SATB_F0s.npz'),
+            PATH_BASE, 'train/indexes/indexes_SSSS_f0s.npz'),
         standard=os.path.join(
-            PATH_BASE, 'train/indexes/indexes_standard_1_4.npz')
+            PATH_BASE, 'train/indexes/indexes_SSSS_f0s.npz'),
     )
     INDEXES_VAL = setting(
         default=os.path.join(
-            PATH_BASE, 'train/indexes/indexes_conditioned_128_4_1_False_False_1.0.npz'),
+            PATH_BASE, 'train/indexes/indexes_SSSS_f0s.npz'),
         standard=os.path.join(
-            PATH_BASE, 'train/indexes/indexes_standard_128_4.npz')
+            PATH_BASE, 'train/indexes/indexes_SSSS_f0s.npz'),
     )
 
-    NUM_THREADS = tf.data.experimental.AUTOTUNE   # 32
-    N_PREFETCH = tf.data.experimental.AUTOTUNE  # 4096
+    NUM_THREADS = 32#tf.data.experimental.AUTOTUNE   # 32
+    N_PREFETCH = 4096#tf.data.experimental.AUTOTUNE  # 4096
 
     # checkpoints
-    EARLY_STOPPING_MIN_DELTA = 1e-5
-    EARLY_STOPPING_PATIENCE = 30
+    EARLY_STOPPING_MIN_DELTA = 1e-8
+    EARLY_STOPPING_PATIENCE = 60
     REDUCE_PLATEAU_PATIENCE = 15
 
     # training
-    BATCH_SIZE = 32
+    BATCH_SIZE = 16
     N_BATCH = 2048
-    N_EPOCH = 1000
+    N_EPOCH = 250
     PROGRESSIVE = True
     AUG = True
-    USE_CASE = 0  # 0: max 1 singer, 1: exactly 1, 2: minimum 1
+    USE_CASE = 1 # 0: max 1 singer, 1: exactly 1, 2: minimum 1
 
     # unet paramters
     INPUT_SHAPE = [512, 128, 1]  # freq = 512, time = 128
@@ -67,24 +67,24 @@ class config(Config):
         simple_cnn='cnn', complex_cnn='cnn'
     )
     FILM_TYPE = setting(
-        'simple', simple_dense='simple', complex_dense='complex',
+        'complex', simple_dense='simple', complex_dense='complex',
         simple_cnn='simple', complex_cnn='complex'
     )
-    Z_DIM = INPUT_SHAPE[1]  # f0 point for each spec frame
+    Z_DIM = [INPUT_SHAPE[1],config_prepro.CQT_BINS+1] # f0 point for each spec frame
     ACT_G = 'linear'
     ACT_B = 'linear'
     N_CONDITIONS = setting(
-        6, simple_dense=6, complex_dense=1008,
+        512, simple_dense=6, complex_dense=1008,
         simple_cnn=6, complex_cnn=1008
     )
 
     # cnn control
     N_FILTERS = setting(
-        [16, 64, 256], simple_cnn=[16, 32, 64], complex_cnn=[32, 64, 256]
+        [32, 64, 256], simple_cnn=[16, 32, 64], complex_cnn=[32, 64, 256]
     )
-    PADDING = ['same', 'same', 'valid']
+    PADDING = ['same', 'same', 'same']
     # Dense control
     N_NEURONS = setting(
-        [16, 64, 256], simple_dense=[16, 64, 256],
+        [16, 256, 1024], simple_dense=[16, 64, 256],
         complex_dense=[16, 256, 1024]
     )

@@ -43,7 +43,7 @@ def make_earlystopping():
     return EarlyStopping(
         monitor='val_loss', min_delta=config.EARLY_STOPPING_MIN_DELTA,
         mode='min', patience=config.EARLY_STOPPING_PATIENCE,
-        verbose=1, restore_best_weights=True
+        verbose=1#, restore_best_weights=True
     )
 
 
@@ -51,9 +51,9 @@ def make_checkpoint(folder):
     folder = os.path.join(folder, 'checkpoint')
     create_folder(folder)
     return ModelCheckpoint(
-        # filepath=os.path.join(folder, 'ckpt_{epoch:02d}-{val_loss:.5f}'),
-        filepath=os.path.join(folder, 'ckpt'),
-        verbose=1, mode='min', save_best_only=True, save_weights_only=True,
+        filepath=os.path.join(folder, 'ckpt_{epoch:02d}-{val_loss:.5f}'),
+        #filepath=os.path.join(folder, 'ckpt'),
+        verbose=1, mode='auto', save_best_only=False, save_weights_only=True,
         monitor='val_loss'
     )
 

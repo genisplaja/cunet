@@ -1,4 +1,5 @@
 import logging
+import numpy as np
 import tensorflow as tf
 from cunet.train.others.utilities import (
     make_earlystopping, make_reduce_lr, make_tensorboard, make_checkpoint,
@@ -8,8 +9,21 @@ from cunet.train.config import config
 from cunet.train.models.cunet_model import cunet_model
 from cunet.train.models.unet_model import unet_model
 import os
+import pdb
 
 #from cunet.train.others.lock import get_lock
+
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+
+gpus = tf.config.list_logical_devices('GPU')
+print(gpus)
+
+print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
+
+#tf.compat.v1.disable_eager_execution()
+
+#log_dir = "./logs/fit/" + 'nov21'
+#tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
 
 
 logger = tf.get_logger()
@@ -17,6 +31,9 @@ logger.setLevel(logging.INFO)
 
 
 def main():
+    #tf.debugging.set_log_device_placement(True)
+
+
     config.parse_args()
     name = make_name()
     save_path = save_dir('models', name)
@@ -41,31 +58,33 @@ def main():
     logger.info('Preparing the genrators')
     # Here to be sure that has the same config
     from cunet.train.data_loader import dataset_generator
+
     ds_train = dataset_generator()
     ds_val = dataset_generator(val_set=True)
 
     logger.info('Starting training for %s' % name)
 
     # USE VAL_STEPS!! 
-    
-    model.fit(
-        ds_train,
-        validation_data=ds_val,
-        steps_per_epoch=config.N_BATCH,
-        epochs=config.N_EPOCH,
-        verbose=1,
-        validation_steps=config.N_BATCH//config.BATCH_SIZE,
-        callbacks=[
-            make_earlystopping(),
-            make_reduce_lr(),
-            make_tensorboard(save_path),
-            make_checkpoint(save_path)
-        ])
 
-    logger.info('Saving model %s' % name)
-    model.save(os.path.join(save_path, name+'.h5'))
-    logger.info('Done!')
-    return
+    with tf.device('/GPU:0'):
+        model.fit(
+            ds_train,
+            validation_data=ds_val,
+            steps_per_epoch=config.N_BATCH,
+            epochs=config.N_EPOCH,
+            verbose=1,
+            validation_steps=config.N_BATCH//2,
+            callbacks=[
+                make_earlystopping(),
+                make_reduce_lr(),
+                make_tensorboard(save_path),
+                make_checkpoint(save_path)
+            ])
+
+        logger.info('Saving model %s' % name)
+        model.save(os.path.join(save_path, name+'.h5'))
+        logger.info('Done!')
+        return
 
 
 if __name__ == '__main__':

@@ -1,3 +1,4 @@
+from posixpath import join
 import numpy as np
 import copy
 import itertools
@@ -14,12 +15,12 @@ from matplotlib import pyplot as plt
 from tqdm import tqdm
 import librosa
 
-DEBUG_DIR = './debug' 
+DEBUG_DIR       = './debug' 
 
-
-def process_f0(f0, f_bins, n_freqs):
+def process_f0(f0, f_bins, n_freqs, part):
 	freqz = np.zeros((f0.shape[0], f_bins.shape[0]))
 	haha = np.digitize(f0, f_bins) - 1
+
 	idx2 = haha < n_freqs
 	haha = haha[idx2]
 	freqz[range(len(haha)), haha] = 1
@@ -27,6 +28,7 @@ def process_f0(f0, f_bins, n_freqs):
 	min_target = np.min(atb[range(len(haha)), haha])
 	atb = atb / min_target
 	atb[atb > 1] = 1
+
 	return atb
 
 def grid_to_bins(grid, start_bin_val, end_bin_val):
@@ -86,6 +88,7 @@ def chunks(l, chunk_size):
 		yield l[i:i + chunk_size]
 
 
+
 # Get the time stamps from the specs. for F0s
 def get_indexes():
 
@@ -104,46 +107,52 @@ def get_indexes():
 
 		# Iterate through all previously computed specs. 
 		for f in tqdm(np.random.choice(spec_files, len(spec_files), replace=False)):
+		#for f in tqdm(spec_files):
 			print(f)
 
 			logger.info('Input points for track %s' % f)
 
-			# SATB
+			# SSSS
 			spec = np.load(f,allow_pickle=True)
-			name = os.path.basename(os.path.normpath(f)).replace('.npz', '') # stem name saved along indexes
+			name = f.split('/')[-1].replace('.npz', '') # stem name saved along indexes
 			indexes[name] = dict()
 
 			# Iterate through all groups
 			for s_group in spec.files:
-				print('s_group', s_group)
-
 				if not any(x in s_group for x in ['config','mixture']):
-					print('hola')
+					print(s_group, 'must be vocals')
 
 					indexes[name][s_group] = dict()
 
 					# Iterate through all parts
 					for i in spec[s_group].item().keys():
-						print('adeu')
 						s = []
+						print(i)
 
 						indexes[name][s_group][str(i)] = None
-						# Get the number of frames for current spec.
+						# Get the number of frames for current spec.s
 						file_length = spec[s_group].item()[str(i)].shape[1]
 						# Retrieve F0s file for current spec
-						part_name = str(name+'_'+s_group+'_'+i)
-						f0_file = [s for s in f0s_files if part_name in s]
-						f0_data = pd.read_csv(f0_file[0],names=["frame", "f0"]) 
+						part_name = str(name+'_'+s_group+'_'+i+'.csv')
+						#f0_file = [s for s in f0s_files if part_name in s]
+						f0_file = os.path.join(config.PATH_F0S, name + '_' + i +'.csv')
+						print(name)
+						print(i)
+						print(f0_file)
+						f0_data = pd.read_csv(f0_file, names=["frame", "f0"]) 
 						f0_frame = f0_data['f0']
 						f0_resampled = signal.resample(f0_frame,file_length)
-
+						f0_resampled = f0_resampled.clip(0)
 						# One-hot encode F0 track
 						freq_grid = librosa.cqt_frequencies(config.CQT_BINS,config.MIN_FREQ,config.BIN_PER_OCT)
 						f_bins = grid_to_bins(freq_grid, 0.0, freq_grid[-1])
 						n_freqs = len(freq_grid)
 
-						atb = process_f0(f0_resampled, f_bins, n_freqs)
+						atb = process_f0(f0_resampled, f_bins, n_freqs, part_name)
 
+						#plot_and_save(f0_frame,os.path.join(F0_DEBUG_TEST,part_name),'original.png')
+						#plot_and_save(f0_resampled,os.path.join(F0_DEBUG_TEST,part_name),'resampled.png')
+						#plot_and_save(np.argmax(atb,axis=1),os.path.join(F0_DEBUG_TEST,part_name),'argmax.png')
 						# for j in np.arange(0, file_length, config.STEP): # iterate over all spec frames
 
 						# 	s.append([j, atb[j,:]])
@@ -156,7 +165,6 @@ def get_indexes():
 		logger.error(error)
 	return indexes
 
-
 def main():
 	logging.basicConfig(
 		filename=os.path.join(config.PATH_INDEXES, 'getting_indexes.log'),
@@ -165,7 +173,7 @@ def main():
 	logger = logging.getLogger('getting_indexes')
 	logger.info('Starting the computation')
 	conditions = []
-	name = "_".join(['indexes','SSSS','F0s'])
+	name = "_".join(['indexes','SSSS','f0s'])
 	data = get_indexes()
 	logger.info('Saving')
 	np.savez(

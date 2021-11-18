@@ -79,6 +79,7 @@ def load_data(files):
 def get_data(path=config_pre.PATH_SPEC):
     return load_data(glob(os.path.join(path, '*.npz')))
 
+
 def get_indexes(path=config.INDEXES_TRAIN):
     indexes = {}
     print('Loading index file %s' % path)
@@ -93,3 +94,4 @@ def get_indexes(path=config.INDEXES_TRAIN):
                     f0 = data_tmp[song].item()[part][part_num]
                     indexes[song][part][part_num] = f0
     return indexes
+

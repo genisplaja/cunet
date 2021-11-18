@@ -150,6 +150,7 @@ def SSSSBatchGenerator(valid=False):
                 condition_data = np.load(config.INDEXES_TRAIN, allow_pickle=True)[randsong].item()['vocals'][actual_part][start_frame:end_frame,:]
                 #out_shapes['conditions'] = np.argmax(condition_data,axis=1)
                 target_data = check_shape(vocal_data[actual_part][:,start_frame:end_frame])
+
                 got_target = True
             except Exception as e: 
                 print('Exception:', e)
@@ -158,6 +159,10 @@ def SSSSBatchGenerator(valid=False):
         out_shapes['conditions'] = condition_data
         out_shapes['target'] = target_data
         out_shapes['mixture'] = mixture_data
+
+        print(np.shape(out_shapes['mixture']))
+        print(np.shape(out_shapes['conditions']))   
+        print(np.shape(out_shapes['target']))
 
         yield out_shapes
         

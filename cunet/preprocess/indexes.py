@@ -108,6 +108,7 @@ def get_indexes():
 		# Iterate through all previously computed specs. 
 		for f in tqdm(np.random.choice(spec_files, len(spec_files), replace=False)):
 		#for f in tqdm(spec_files):
+
 			print(f)
 
 			logger.info('Input points for track %s' % f)

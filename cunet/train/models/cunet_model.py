@@ -105,6 +105,6 @@ def cunet_model():
 
     model = Model(inputs=[inputs, input_conditions], outputs=outputs)
     model.compile(
-        optimizer=Adam(lr=config.LR, beta_1=0.5), loss=config.LOSS)
+        optimizer=Adam(learning_rate=config.LR, beta_1=0.5), loss=config.LOSS)
         # experimental_run_tf_function=False)
     return model

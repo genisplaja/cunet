@@ -57,10 +57,10 @@ def main():
 
     logger.info('Preparing the genrators')
     # Here to be sure that has the same config
-    from cunet.train.data_loader import dataset_generator
+    from cunet.train.data_loader import create_data_generator_train, create_data_generator_val
 
-    ds_train = dataset_generator()
-    ds_val = dataset_generator(val_set=True)
+    ds_train = create_data_generator_train(config.BATCH_SIZE)
+    ds_val = create_data_generator_val(config.BATCH_SIZE)
 
     logger.info('Starting training for %s' % name)
 

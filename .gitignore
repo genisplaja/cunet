@@ -2,6 +2,7 @@
 /cunet/train/others/all_files.py
 /cunet/evaluation/visualizing_old.py
 /vunet
+/resources/Saraga-SS-Synth/
 
 .replicate
 *.h5

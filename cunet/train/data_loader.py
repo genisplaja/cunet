@@ -6,13 +6,21 @@ import pandas as pd
 import tensorflow as tf
 from cunet.train.config import config
 from cunet.train.load_data_offline import get_data
-from cunet.train.others.val_files import VAL_FILES
 import random
 import logging
 import librosa
 import tqdm
 
-DATA = get_data()
+DATA_MIXTURE, DATA_TARGET, DATA_CONDITIONS, DATA_MIXTURE_VAL, DATA_TARGET_VAL, DATA_CONDITIONS_VAL = get_data()
+
+print(np.shape(DATA_MIXTURE))
+print(np.shape(DATA_TARGET))
+print(np.shape(DATA_CONDITIONS))
+
+print(np.shape(DATA_MIXTURE_VAL))
+print(np.shape(DATA_TARGET_VAL))
+print(np.shape(DATA_CONDITIONS_VAL))
+
 logger = logging.getLogger('tensorflow')
 
 
@@ -85,7 +93,7 @@ def get_name(txt):
 #             )
 #     return np.abs(mixture)
 
-
+'''
 def SSSSBatchGenerator(valid=False):
     
     while True:
@@ -125,17 +133,7 @@ def SSSSBatchGenerator(valid=False):
         parts = list(vocal_data.keys())
         actual_part = random.choice(parts)
 
-        start_frame = 0
-        end_frame   = 0
-
-        # Get Start and End samples. Pick random part to calculate start/end spl
-        while start_frame == 0:
-            try:
-                start_frame = random.randint(0, vocal_data[actual_part].shape[1]-config.INPUT_SHAPE[1]) # This assume that all stems are the same length
-            except Exception as e: 
-                print('Exception:', e)
-                pass
-
+        start_frame = random.randint(0, vocal_data[actual_part].shape[1]-config.INPUT_SHAPE[1]) # This assume that all stems are the same length
         end_frame   = start_frame+config.INPUT_SHAPE[1]
         #print(start_frame, end_frame)
 
@@ -143,28 +141,24 @@ def SSSSBatchGenerator(valid=False):
         mixture_data = check_shape(mixture_data[actual_part][:,start_frame:end_frame])
 
         # Take vocal source as target
-        got_target = False
-        while got_target == False:
-            try:
-                target = 'vocals'
-                condition_data = np.load(config.INDEXES_TRAIN, allow_pickle=True)[randsong].item()['vocals'][actual_part][start_frame:end_frame,:]
-                #out_shapes['conditions'] = np.argmax(condition_data,axis=1)
-                target_data = check_shape(vocal_data[actual_part][:,start_frame:end_frame])
-
-                got_target = True
-            except Exception as e: 
-                print('Exception:', e)
-                pass
+        condition_data = INDEXES[randsong].item()['vocals'][actual_part][start_frame:end_frame,:]
+        #out_shapes['conditions'] = np.argmax(condition_data,axis=1)
+        target_data = check_shape(vocal_data[actual_part][:,start_frame:end_frame])
         
         out_shapes['conditions'] = condition_data
         out_shapes['target'] = target_data
         out_shapes['mixture'] = mixture_data
 
-        print(np.shape(out_shapes['mixture']))
-        print(np.shape(out_shapes['conditions']))   
-        print(np.shape(out_shapes['target']))
+        #print(np.shape(out_shapes['mixture']))
+        #print(np.shape(out_shapes['conditions']))   
+        #print(np.shape(out_shapes['target']))
 
-        yield out_shapes
+
+        inputs = (out_shapes["mixture"], out_shapes["conditions"])
+        outputs = out_shapes["target"]
+
+        #yield out_shapes
+        yield (inputs, outputs)
         
 
 def convert_to_estimator_input(d):
@@ -201,3 +195,61 @@ def dataset_generator(val_set=False):
     if not val_set:
         ds = ds.repeat()
     return ds
+'''
+
+def create_data_generator_train(batch_size):
+
+    length = len(DATA_TARGET)
+    idx = [i for i in range(length)]
+    random.shuffle(idx)
+
+    i = 0
+    while True:
+
+        if i + batch_size > length:
+            i = 0
+            random.shuffle(idx)
+
+        # 每次取batch_size个key
+        mixtures, targets, conditions = [], [], []
+        for j in range(i, i + batch_size):
+            # 对每一个，取feature
+            mixture = DATA_MIXTURE[idx[j]]
+            target = DATA_TARGET[idx[j]]
+            condition = DATA_CONDITIONS[idx[j]]
+
+            mixtures.append(mixture)
+            targets.append(target)
+            conditions.append(condition)
+
+        i += batch_size
+        yield ((np.stack(mixtures, axis=0), np.stack(conditions, axis=0)), np.stack(targets, axis=0))
+
+
+def create_data_generator_val(batch_size):
+
+    length = len(DATA_TARGET_VAL)
+    idx = [i for i in range(length)]
+    random.shuffle(idx)
+
+    i = 0
+    while True:
+
+        if i + batch_size > length:
+            i = 0
+            random.shuffle(idx)
+
+        # 每次取batch_size个key
+        mixtures, targets, conditions = [], [], []
+        for j in range(i, i + batch_size):
+            # 对每一个，取feature
+            mixture = DATA_MIXTURE_VAL[idx[j]]
+            target = DATA_TARGET_VAL[idx[j]]
+            condition = DATA_CONDITIONS_VAL[idx[j]]
+
+            mixtures.append(mixture)
+            targets.append(target)
+            conditions.append(condition)
+
+        i += batch_size
+        yield ((np.stack(mixtures, axis=0), np.stack(conditions, axis=0)), np.stack(targets, axis=0))

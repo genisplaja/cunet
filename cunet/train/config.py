@@ -18,7 +18,7 @@ class config(Config):
     TARGET = 'vocals'   # only for standard version
 
     # GENERATOR
-    PATH_BASE = '/mnt/md1/genis/Saraga-SS-Synth'
+    PATH_BASE = '/home/genis/cunet/resources/Saraga-SS-Synth/'
     # default = conditioned
     INDEXES_TRAIN = setting(
         default=os.path.join(
@@ -42,7 +42,7 @@ class config(Config):
     REDUCE_PLATEAU_PATIENCE = 15
 
     # training
-    BATCH_SIZE = 16
+    BATCH_SIZE = 64
     N_BATCH = 2048
     N_EPOCH = 250
     PROGRESSIVE = True

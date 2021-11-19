@@ -1,4 +1,6 @@
 import copy
+import math
+import tqdm
 import numpy as np
 import os
 from cunet.train.config import config
@@ -48,6 +50,13 @@ def get_max_complex(data, keys):
     return max_comp
 
 
+def check_shape(data):
+    n = data.shape[0]
+    if n % 2 != 0:
+        n = data.shape[0] - 1
+    return np.expand_dims(data[:n, :], axis=2)
+
+
 def load_a_file(fl):
     data = {}
     print('Loading the file %s' % fl)
@@ -76,8 +85,42 @@ def load_data(files):
     return data
 
 
+def batch_size(feat_list, features, indexes=False):
+    frame_size = config.INPUT_SHAPE[1]
+    if indexes is False:
+        for i in np.arange(math.floor(features.shape[1]/frame_size)):
+            feat_list.append(check_shape(features[:, i*frame_size:(i+1)*frame_size]))
+
+    else:
+        for i in np.arange(math.floor(features.shape[0]/frame_size)):
+            feat_list.append(features[i*frame_size:(i+1)*frame_size, :])
+
+    return feat_list
+
+
 def get_data(path=config_pre.PATH_SPEC):
-    return load_data(glob(os.path.join(path, '*.npz')))
+    data = load_data(random.sample(glob(os.path.join(path, '*.npz')), 25))
+    indexes = np.load(config.INDEXES_TRAIN, allow_pickle=True)
+    train_tracks = random.sample([i for i in data.keys()], 20)
+    validation_tracks = [i for i in data.keys() if i not in train_tracks]
+
+    mixture_list, target_list, conditions_list = [], [], []
+    for i in tqdm.tqdm(train_tracks):
+        song_conditions = indexes[i].item()['vocals']
+        for part in data[i]['vocals']:
+            mixture_list = batch_size(mixture_list, data[i]['mixture'][part])
+            target_list = batch_size(target_list, data[i]['vocals'][part])
+            conditions_list = batch_size(conditions_list, song_conditions[part], indexes=True)
+
+    mixture_list_val, target_list_val, conditions_list_val = [], [], []
+    for i in tqdm.tqdm(validation_tracks):
+        song_conditions = indexes[i].item()['vocals']
+        for part in data[i]['vocals']:
+            mixture_list_val = batch_size(mixture_list, data[i]['mixture'][part])
+            target_list_val = batch_size(target_list, data[i]['vocals'][part])
+            conditions_list_val = batch_size(conditions_list, song_conditions[part], indexes=True)
+
+    return mixture_list, target_list, conditions_list, mixture_list_val, target_list_val, conditions_list_val
 
 
 def get_indexes(path=config.INDEXES_TRAIN):

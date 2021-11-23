@@ -12,21 +12,22 @@ class config(Config):
         complex_dense='complex_dense',
         simple_cnn='simple_cnn', complex_cnn='complex_cnn',
     )
-    PATH_BASE = '../data/satb_dst/models'
-    NAME = 'satb_f0s'
+    PATH_BASE = '/home/genis/cunet/resources/Saraga-SS-Synth/models'
+    NAME = 'ssss_one_hot_f0s'
 
     PATH_MODEL = setting(
-        default=os.path.join(PATH_BASE, 'conditioned/simple_cnn'),
+        default=os.path.join(PATH_BASE, 'conditioned/complex_cnn'),
         standard=os.path.join(PATH_BASE, 'standard'),
         simple_dense=os.path.join(PATH_BASE, 'conditioned/simple_dense'),
         complex_dense=os.path.join(PATH_BASE, 'conditioned/complex_dense'),
         simple_cnn=os.path.join(PATH_BASE, 'conditioned/simple_cnn'),
         complex_cnn=os.path.join(PATH_BASE, 'conditioned/complex_cnn')
     )
-    PATH_AUDIO = '../data/satb_dst/test/complex'
+    PATH_AUDIO = '/home/genis/cunet/resources/Saraga-SS-Synth/test/complex'
+    PATH_INDEXES = '/home/genis/cunet/resources/Saraga-SS-Synth/test/indexes'
     PATH_AUDIO_PRED = os.path.join(PATH_MODEL.default,NAME,'pred_audio')
-    TARGET = ['soprano', 'alto', 'tenor', 'bass']  # ['vocals', 'bass', 'bass_vocals'] -> not ready yet for complex conditions
-    INSTRUMENTS = ['soprano', 'alto', 'tenor', 'bass']  # to check that has the same order than the training
+    TARGET = ['vocals']
+    INSTRUMENTS = ['vocals', 'mixture']  # to check that has the same order than the training
     OVERLAP = 0
     MODE = setting(default='conditioned', standard='standard')
     EMB_TYPE = setting(

@@ -3,6 +3,7 @@
 /cunet/evaluation/visualizing_old.py
 /vunet
 /resources/Saraga-SS-Synth/
+/cunet/ftanet/model/
 
 .replicate
 *.h5

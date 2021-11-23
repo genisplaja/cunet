@@ -17,7 +17,7 @@ import librosa
 
 DEBUG_DIR       = './debug' 
 
-def process_f0(f0, f_bins, n_freqs, part):
+def process_f0(f0, f_bins, n_freqs):
 	freqz = np.zeros((f0.shape[0], f_bins.shape[0]))
 	haha = np.digitize(f0, f_bins) - 1
 
@@ -165,6 +165,33 @@ def get_indexes():
 	except Exception as error:
 		logger.error(error)
 	return indexes
+
+
+# Get the time stamps from the specs. for F0s
+def get_index_for_file(f0_frame, spec):
+
+	logger = logging.getLogger('getting_indexes')
+	logger.info('Computing the indexes')
+	indexes = {'config': {'FR': config.FR, 'FFT_SIZE': config.FFT_SIZE, 'HOP': config.HOP}}
+
+	try:
+		file_length = spec.shape[1]
+		f0_resampled = signal.resample(f0_frame,file_length)
+		f0_resampled = f0_resampled.clip(0)
+		# One-hot encode F0 track
+		freq_grid = librosa.cqt_frequencies(config.CQT_BINS,config.MIN_FREQ,config.BIN_PER_OCT)
+		f_bins = grid_to_bins(freq_grid, 0.0, freq_grid[-1])
+		n_freqs = len(freq_grid)
+
+		atb = process_f0(f0_resampled, f_bins, n_freqs)
+
+		indexes['data'] = atb
+
+	except Exception as error:
+		logger.error(error)
+		
+	return indexes
+
 
 def main():
 	logging.basicConfig(

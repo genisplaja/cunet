@@ -4,7 +4,56 @@ from tqdm import tqdm
 from cunet.preprocess.config import config
 import logging
 import os
+import pandas as pd
+from scipy import signal
 import librosa
+
+
+def remove_unvoiced(audio_array, f0_array, min_length):
+    audio_list = list(audio_array)
+    f0_list = list(f0_array)
+    sample_pairs = consider_voiced_regions(f0_array, min_length)
+    
+    audio_output = []
+    f0_output = []
+    for i in sample_pairs:
+        if audio_output == []:
+            audio_output = audio_list[int(i[0]):int(i[1])]
+            f0_output = f0_list[int(i[0]):int(i[1])]
+        else:
+            audio_output += audio_list[int(i[0]):int(i[1])]
+            f0_output += f0_list[int(i[0]):int(i[1])]
+            
+    return np.array(audio_array), np.array(f0_output)
+
+
+def consider_voiced_regions(pitch_track, region_min_length):
+    # Detect voiced regions
+    start_times, end_times = get_activations(pitch_track)
+    region_pairs = [[x, y] for x, y in zip(start_times, end_times)]
+    region_pairs_filt = []
+    for i in region_pairs:
+        if int(i[1] - i[0]) >= region_min_length:
+            region_pairs_filt.append(i)
+            
+    return region_pairs_filt
+        
+        
+def get_activations(pitch_track):
+    silent_zone_on = True
+    start_times = []
+    end_times = []
+    for idx, value in enumerate(pitch_track):
+        if value == 0:
+            if not silent_zone_on:
+                end_times.append(idx-1)
+                silent_zone_on = True
+        else:
+            if silent_zone_on:
+                start_times.append(idx)
+                silent_zone_on = False
+    
+    return start_times, end_times
 
 
 def get_config_as_str():
@@ -20,10 +69,29 @@ def spec_complex(audio_file):
     logger = logging.getLogger('computing_spec')
     try:
         audio = np.zeros([1])
+        #filename = audio_file.split('/')[-1].replace('_mix.wav', '.csv').replace('_vocals.wav', '.csv')
+        #f0_filename = os.path.join(config.PATH_BASE, 'train', 'f0s', filename)
         logger.info('Computing complex spec for %s' % audio_file)
+        
         audio, fe = librosa.load(audio_file, sr=config.FR)
+        '''
+        f0_data = pd.read_csv(
+            f0_filename,
+            names=["frame", "f0"]
+        )
+        f0_frame = f0_data["f0"]
+        f0_resampled = signal.resample(f0_frame, len(audio))
+
+        audio_filt, f0_filt = remove_unvoiced(audio, f0_resampled, 2000)
+        np.savetxt(os.path.join(config.PATH_BASE, 'train', 'f0_filt', f0_filename), 
+                   f0_filt,
+                   delimiter=','
+        )
+        '''
         output['spec'] = librosa.stft(
             audio, n_fft=config.FFT_SIZE, hop_length=config.HOP)
+        
+        
     except Exception as my_error:
         logger.error(my_error)
     return output
@@ -105,14 +173,17 @@ def compute_one_song(folder):
             part = filename.split('_')[-2]
 
             if config.GROUP == 'test':
-                data[group] = spec_complex(i)['spec']
+                data['vocals'][part] = spec_complex(i)['spec']
+                data['mixture'][part] = spec_complex(i.replace('mix', 'vocals'))['spec']
                 #data[group] = spec_complex(mix_stem)['spec']
             if config.GROUP == 'train':
                 data['vocals'][part] = spec_complex(i)['spec']
                 data['mixture'][part] = spec_complex(i.replace('mix', 'vocals'))['spec']
 
+        '''
         if config.GROUP == 'test':
             data['mixture'] = spec_complex(stem_list)['spec']
+        '''
 
         print('Saving data...')
         print(os.path.join(config.PATH_SPEC, name+'.npz'))
@@ -126,6 +197,13 @@ def compute_one_song(folder):
         return
 
 
+def compute_one_file(filename):
+    data = {}
+    data['mixture'] = spec_complex(filename)['spec']
+
+    return data
+
+
 def main():
     logging.basicConfig(
         filename=os.path.join(config.PATH_SPEC, 'computing_spec.log'),
@@ -133,6 +211,10 @@ def main():
     )
     logger = logging.getLogger('computing_spec')
     logger.info('Starting the computation')
+    
+    if not os.path.exists(os.path.join(config.PATH_BASE, 'train', 'f0_filt')):
+        os.mkdir(os.path.join(config.PATH_BASE, 'train', 'f0_filt'))
+    
     for i in tqdm(glob(os.path.join(config.PATH_RAW, '*/'))):
         print(i)
         if os.path.isdir(i):

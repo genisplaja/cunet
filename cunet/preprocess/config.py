@@ -4,7 +4,7 @@ from effortless_config import Config, setting
 
 class config(Config):
     groups = ['train', 'test']
-    PATH_BASE = '/home/genis/cunet/resources/Saraga-SS-Synth/'
+    PATH_BASE = '/mnt/md1/genis/Saraga-SS-Synth/'
     PATH_RAW = setting(
         default=PATH_BASE+'train/raw_audio',
         train=PATH_BASE+'train/raw_audio', test=PATH_BASE+'test/raw_audio'
@@ -25,7 +25,7 @@ class config(Config):
     FFT_SIZE = 1024
     HOP = 256
     MODE = 'conditioned'
-    GROUP = 'train'  # mainly used for spectrogram pre-processing: need to compute the mixture as well
+    GROUP = 'test'  # mainly used for spectrogram pre-processing: need to compute the mixture as well
 
     CQT_BINS = 360
     MIN_FREQ = 32.7
